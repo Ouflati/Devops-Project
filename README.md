@@ -1,7 +1,7 @@
 
 ## Version 1.0.0
 ---
-
+Hotfix appliqué
 # Sample web application
 
 ![](./readme-assets/app-screenshot.png)
