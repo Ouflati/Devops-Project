@@ -1,7 +1,7 @@
 
-
+## Version 1.0.0
 ---
-
+Hotfix appliqué
 # Sample web application
 
 ![](./readme-assets/app-screenshot.png)
@@ -36,4 +36,4 @@ After installing the dependencies, `make run-api-golang` will build and run the 
 
 Like `api-node`, you will first need to install the dependencies with `npm install` (again, I used node `v19.4.0` and npm `v9.2.0`)
 
-After installing the dependencies, `make run-client-react` will use vite to run the react app in development mode.
+After installing the dependencies, `make run-client-react` will use vite to run the react app in development mode.Version 1.0.0 est ready pour production
