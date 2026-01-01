@@ -1,4 +1,3 @@
-// api-node/src/db.js  (← give students THIS version)
 const path = require('path');
 const sqlite3 = require('sqlite3');
 const { open } = require('sqlite');
@@ -12,7 +11,6 @@ async function openDb() {
   });
 }
 
-// Only returns current time – same shape as original Postgres version
 const getDateTime = async () => {
   const db = await openDb();
   try {
@@ -23,4 +21,4 @@ const getDateTime = async () => {
   }
 };
 
-module.exports = { getDateTime };
+module.exports = { openDb, getDateTime };
