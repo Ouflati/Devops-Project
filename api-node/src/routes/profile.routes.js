@@ -7,5 +7,7 @@ router.get("/users/:id/profile", auth, ctrl.getUserProfile);
 router.put("/users/me/profile", auth, ctrl.updateMyProfile);
 router.get("/users/me/activity", auth, ctrl.getMyActivity);
 router.patch("/users/me/preferences", auth, ctrl.updatePreferences);
-
+router.get("/api/users/me/profile", auth, controller.getMyProfile);
 module.exports = router;
+
+
