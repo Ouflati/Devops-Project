@@ -17,7 +17,7 @@ app.get('/health', (req, res) => res.json({ status: 'ok' }));
 // Lancer le serveur
 if (process.env.NODE_ENV !== 'test') {
   const PORT = process.env.PORT || 3000;
-  app.listen(PORT, () => console.log(`Auth API running on port ${PORT}`));
+  app.listen(PORT, () => console.log(`Auth API is running on port ${PORT}`));
 }
 
 module.exports = app;

@@ -101,7 +101,7 @@ export default function AuthApp() {
           <button onClick={handleMe}>Qui suis-je ?</button>
           <pre>{JSON.stringify(me, null, 2)}</pre>
 
-          <h3>Changer mot de passe</h3>
+          <h3>Changer votre mot de passe</h3>
           <input name="oldPassword" type="password" placeholder="Ancien mot de passe" onChange={handleChange} />
           <input name="newPassword" type="password" placeholder="Nouveau mot de passe" onChange={handleChange} />
           <button onClick={handleChangePassword}>Changer</button>
