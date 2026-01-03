@@ -69,7 +69,7 @@ export default function AuthApp() {
 
   return (
     <div style={{ border: "1px solid #aaa", padding: 20, marginTop: 30 }}>
-      <h2>🔐 Auth Application</h2>
+      <h2>🔐 Authentification</h2>
 
       <div>
         <button onClick={() => setMode("login")}>Login</button>
