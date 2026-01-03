@@ -1,39 +1,30 @@
-const { getDateTime } = require('./db');
-
 const express = require('express');
-const morgan = require('morgan');
+// 1. Import de la configuration DB
+const { pool, createTables } = require('./db'); 
+// 2. Import des routes de Mohamed
+const taskRoutes = require('./routes/tasks'); 
 
 const app = express();
-const port = process.env.PORT || 3000;
+app.use(express.json());
 
-// setup the logger
-app.use(morgan('tiny'));
+// Création automatique des tables au démarrage
+createTables();
 
-// Root endpoint – shows current time from SQLite // added for version 2 
-app.get('/', async (req, res) => {
-  try {
-    const dateTime = await getDateTime(); // → { now: "2025-08-09 14:23:12" }
-    res.json({
-      ...dateTime,
-      api: 'node',
-      message: 'Node.js + SQLite ',
+// Route de santé (pour vérifier que le serveur tourne)
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok', timestamp: new Date() });
+});
+
+// 3. Activation des routes Tâches
+// Toutes les requêtes vers /api/tasks iront dans le fichier de Mohamed
+app.use('/api/tasks', taskRoutes);
+
+const PORT = process.env.PORT || 3000;
+
+if (require.main === module) {
+    app.listen(PORT, () => {
+        console.log(`Server running on port ${PORT}`);
     });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Database unreachable' });
-  }
-});
-app.get('/ping', async (_, res) => {
-  res.send('pong');
-});
+}
 
-const server = app.listen(port, () => {
-  console.log(`Example app listening on port ${port}`);
-});
-
-process.on('SIGTERM', () => {
-  console.debug('SIGTERM signal received: closing HTTP server');
-  server.close(() => {
-    console.debug('HTTP server closed');
-  });
-});
+module.exports = app;
