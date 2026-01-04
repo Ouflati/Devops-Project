@@ -1,3 +1,6 @@
+Voici la version mise à jour de votre fichier **README.md**, incluant la section Docker, tout en conservant une structure professionnelle et sans aucun emoji.
+
+---
 
 # Calendar API - Go + Gin + SQLite
 
@@ -11,21 +14,47 @@ L'API permet d'effectuer les opérations CRUD complètes sur les événements :
 - Modification d'événements existants
 - Suppression d'événements
 
+---
+
 ## Installation et Lancement
 
 ### Prérequis
 - Go (version 1.18 ou supérieure)
+- Docker (optionnel)
 
-### 1. Installer les dépendances
+### Lancement local
+1. Installer les dépendances :
 ```bash
 go mod download
 ```
 
-### 2. Démarrer l'API
+2. Démarrer l'API :
 ```bash
 go run main.go
 ```
-Par défaut, l'API est accessible à l'adresse suivante : `http://localhost:8080`
+Par défaut, l'API est accessible sur : `http://localhost:8080`
+
+### Lancement avec Docker
+
+**Build de l'image :**
+```bash
+docker build -t calendar-api .
+```
+
+**Lancement du conteneur :**
+```bash
+docker run -p 8080:8080 --name calendar-container calendar-api
+```
+
+**Arrêt du conteneur :**
+```bash
+docker stop calendar-container
+```
+
+**Suppression du conteneur :**
+```bash
+docker rm calendar-container
+```
 
 ---
 
@@ -74,20 +103,6 @@ Corps de la requête :
 }
 ```
 
-### Modifier un événement
-**PUT /calendar/:id**
-
-Corps de la requête :
-```json
-{
-  "title": "Cours modifié",
-  "description": "Mise à jour du contenu",
-  "start_date": "2026-01-10",
-  "end_date": "2026-01-11",
-  "user_id": 1
-}
-```
-
 ---
 
 ## Validation et Gestion des Erreurs
@@ -98,9 +113,9 @@ L'API applique les règles de validation suivantes :
 - **start_date** : Obligatoire.
 - **end_date** : Obligatoire.
 - **user_id** : Obligatoire.
-- **Logique** : La date de début (`start_date`) doit être chronologiquement antérieure à la date de fin (`end_date`).
+- **Logique** : La date de début (start_date) doit être chronologiquement antérieure à la date de fin (end_date).
 
-En cas de non-respect de ces règles, l'API retourne un code d'erreur avec le format suivant :
+En cas d'erreur, l'API retourne un code HTTP 400 avec le format suivant :
 ```json
 {
   "error": "invalid fields",
