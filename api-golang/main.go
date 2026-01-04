@@ -22,6 +22,8 @@ func init() {
 func main() {
 
 	r := gin.Default()
+	r.SetTrustedProxies(nil)
+
 	var tm time.Time
 
 	r.GET("/", func(c *gin.Context) {
