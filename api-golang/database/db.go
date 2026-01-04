@@ -1,49 +1,69 @@
-// api-golang/database/db.go
-// SQLite version for Step 1 & 2 – NO Docker, NO Postgres
 package database
 
 import (
 	"database/sql"
 	"os"
 	"path/filepath"
+	"runtime"
 	"time"
 
 	"github.com/gin-gonic/gin"
-	_ "github.com/mattn/go-sqlite3" // SQLite driver
+	_ "github.com/mattn/go-sqlite3"
 )
 
 var db *sql.DB
 
-// InitDB initializes the shared SQLite database (dev.db in project root)
+// InitDB initializes the shared SQLite database
 func InitDB() error {
-	// Calculate path: go up two levels from this file → project root
+	// go up to project root
 	_, currentFile, _, _ := runtime.Caller(0)
 	rootDir := filepath.Dir(filepath.Dir(filepath.Dir(currentFile)))
 	dbPath := filepath.Join(rootDir, "dev.db")
 
-	// Open (and create if not exists) the SQLite file
 	var err error
 	db, err = sql.Open("sqlite3", dbPath+"?cache=shared&mode=rwc&_fk=1")
 	if err != nil {
 		return err
 	}
 
-	// Test the connection
-	return db.Ping()
+	// test connection
+	if err := db.Ping(); err != nil {
+		return err
+	}
+
+	// run migrations
+	return Migrate()
 }
 
-// GetTime returns the current time from SQLite
-// Same signature as the original Postgres version → zero code changes elsewhere
 func GetTime(ctx *gin.Context) time.Time {
-	var tm time.Time
+	var s string
 
-	// SQLite: datetime('now') or CURRENT_TIMESTAMP both work
-	err := db.QueryRow("SELECT datetime('now')").Scan(&tm)
+	err := db.QueryRow("SELECT datetime('now')").Scan(&s)
 	if err != nil {
-		// In real apps you would return an error, but we keep original behavior
-		// (crash loudly so students see something is wrong)
 		os.Stderr.WriteString("SQLite query failed: " + err.Error() + "\n")
 		os.Exit(1)
 	}
-	return tm
+
+	t, _ := time.Parse("2006-01-02 15:04:05", s)
+	return t
+}
+
+func Migrate() error {
+	query := `
+CREATE TABLE IF NOT EXISTS calendar (
+	id INTEGER PRIMARY KEY AUTOINCREMENT,
+	title TEXT NOT NULL,
+	description TEXT,
+	start_date TEXT NOT NULL,
+	end_date TEXT NOT NULL,
+	user_id INTEGER,
+	created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);`
+
+	_, err := db.Exec(query)
+	return err
+}
+
+func DB() *sql.DB {
+	return db
 }
