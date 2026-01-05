@@ -63,5 +63,16 @@ Champs recherchables:
 - description
 
 
-## Tables encore à confirmer
-- polls (Team 3)
+## Table: chat_messages (Team 3 – Chat)
+Source:
+- Branche: origin/feature/team3-chat
+- Fichier: api-node/database/migration_002_chat_messages.sql
+
+Champs:
+- id (PK)
+- user_id (FK -> users.id)
+- content (TEXT, NOT NULL)
+- created_at (default CURRENT_TIMESTAMP)
+
+Champs recherchables:
+- content
