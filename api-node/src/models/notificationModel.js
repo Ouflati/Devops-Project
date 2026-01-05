@@ -1,8 +1,5 @@
 const { openDb } = require('../db');
 
-/**
- * Récupérer les notifications d'un utilisateur avec pagination
- */
 async function getNotifications(userId, limit = 10, offset = 0) {
   const db = await openDb();
   const notifications = await db.all(
@@ -16,9 +13,6 @@ async function getNotifications(userId, limit = 10, offset = 0) {
   return notifications;
 }
 
-/**
- * Compter le nombre de notifications non lues pour le badge
- */
 async function countUnread(userId) {
   const db = await openDb();
   const result = await db.get(
@@ -30,10 +24,6 @@ async function countUnread(userId) {
   return result ? result.count : 0;
 }
 
-/**
- * Marquer une seule notification comme lue
- * On vérifie le user_id par sécurité
- */
 async function markAsRead(id, userId) {
   const db = await openDb();
   const result = await db.run(
@@ -45,9 +35,6 @@ async function markAsRead(id, userId) {
   return result.changes > 0;
 }
 
-/**
- * Tout marquer comme lu pour un utilisateur
- */
 async function markAllAsRead(userId) {
   const db = await openDb();
   const result = await db.run(
@@ -59,9 +46,6 @@ async function markAllAsRead(userId) {
   return result.changes;
 }
 
-/**
- * Créer une nouvelle notification (utilisé par le POST interne)
- */
 async function createNotification(userId, type, message) {
   const db = await openDb();
   const result = await db.run(
