@@ -2,7 +2,6 @@ package main
 
 import (
 	"log"
-	"time"
 
 	"github.com/gin-gonic/gin"
 
@@ -26,7 +25,7 @@ func main() {
 	searchService := searchservice.NewSearchService()
 	searchHandler := searchhttp.NewSearchHandler(searchService)
 
-	var tm time.Time
+	var tm string
 
 	r.GET("/", func(c *gin.Context) {
 		tm = database.GetTime(c)
