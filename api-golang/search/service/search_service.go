@@ -37,10 +37,11 @@ func (s *searchService) Search(query string, types []string, limit int) (model.S
 	searchUsers := len(types) == 0 || contains(types, "users")
 	searchTasks := len(types) == 0 || contains(types, "tasks")
 	searchCalendar := len(types) == 0 || contains(types, "calendar")
+	searchChat := len(types) == 0 || contains(types, "chat")
 
 	db := database.GetDB()
 
-	// 🔍 USERS
+	//  USERS
 	if searchUsers {
 		rows, err := db.Query(`
 			SELECT id, username, email
@@ -68,7 +69,7 @@ func (s *searchService) Search(query string, types []string, limit int) (model.S
 		}
 	}
 
-	// 🔍 TASKS
+	//  TASKS
 	if searchTasks {
 		rows, err := db.Query(`
 			SELECT id, title, description
@@ -96,7 +97,7 @@ func (s *searchService) Search(query string, types []string, limit int) (model.S
 		}
 	}
 
-	// 🔍 CALENDAR
+	//  CALENDAR
 	if searchCalendar {
 		rows, err := db.Query(`
 			SELECT id, title, description
@@ -115,6 +116,33 @@ func (s *searchService) Search(query string, types []string, limit int) (model.S
 						ID:      id,
 						Label:   title,
 						Snippet: description,
+					})
+					if len(results) >= limit {
+						return model.SearchResponse{Query: q, Results: results}, nil
+					}
+				}
+			}
+		}
+	}
+
+	// CHAT MESSAGES
+	if searchChat {
+		rows, err := db.Query(`
+			SELECT id, content
+			FROM chat_messages
+			WHERE LOWER(content) LIKE '%' || LOWER(?) || '%'
+		`, q)
+		if err == nil {
+			defer rows.Close()
+			for rows.Next() {
+				var id int64
+				var content string
+				if err := rows.Scan(&id, &content); err == nil {
+					results = append(results, model.SearchResult{
+						Type:    "chat_messages",
+						ID:      id,
+						Label:   "Message",
+						Snippet: content,
 					})
 					if len(results) >= limit {
 						return model.SearchResponse{Query: q, Results: results}, nil
