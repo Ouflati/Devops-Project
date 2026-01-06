@@ -1,8 +1,5 @@
 const { openDb } = require("../db");
 
-/**
- * GET /api/chat/messages
- */
 exports.getMessages = async (req, res) => {
   try {
     const db = await openDb();
@@ -25,35 +22,22 @@ exports.getMessages = async (req, res) => {
   }
 };
 
-/**
- * POST /api/chat/messages
- */
 exports.sendMessage = async (req, res) => {
   try {
-    const { username, content } = req.body;
-    if (!username || !content) {
-      return res.status(400).json({ message: "Données manquantes" });
+    const { content } = req.body;
+    const userId = req.userId; // ← injecté par authMiddleware
+
+    if (!content) {
+      return res.status(400).json({ message: "Message vide" });
     }
 
     const db = await openDb();
-
-    // récupérer user_id depuis username
-    const user = await db.get(
-      "SELECT id FROM users WHERE username = ?",
-      [username]
-    );
-
-    if (!user) {
-      await db.close();
-      return res.status(404).json({ message: "Utilisateur introuvable" });
-    }
-
     await db.run(
       "INSERT INTO chat_messages (user_id, content) VALUES (?, ?)",
-      [user.id, content]
+      [userId, content]
     );
-
     await db.close();
+
     res.status(201).json({ message: "Message envoyé" });
   } catch (err) {
     console.error(err);
@@ -61,9 +45,6 @@ exports.sendMessage = async (req, res) => {
   }
 };
 
-/**
- * DELETE /api/chat/messages/:id
- */
 exports.deleteMessage = async (req, res) => {
   try {
     const db = await openDb();

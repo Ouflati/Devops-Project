@@ -1,123 +1,141 @@
 import { useEffect, useRef, useState } from "react";
 
-const API_URL = "http://localhost:3000/api/chat/messages";
+const API_CHAT = "http://localhost:3000/api/chat/messages";
+const API_ME = "http://localhost:3000/auth/me";
 
 export default function TeamChat() {
-  const [username, setUsername] = useState(
-    localStorage.getItem("chat_user") || ""
-  );
-  const [draftUser, setDraftUser] = useState(username);
-  const [text, setText] = useState("");
   const [messages, setMessages] = useState([]);
+  const [text, setText] = useState("");
+  const [me, setMe] = useState(null);
   const boxRef = useRef(null);
 
-  /* ======================
-     Charger messages
-  ====================== */
-  const loadMessages = async () => {
-    const res = await fetch(API_URL);
-    const data = await res.json();
-    setMessages(data);
+  const token = localStorage.getItem("token");
+
+  // =========================
+  // Récupérer l'utilisateur connecté
+  // =========================
+  const loadMe = async () => {
+    try {
+      const res = await fetch(API_ME, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      const data = await res.json();
+      setMe(data);
+    } catch (err) {
+      console.error("Erreur loadMe", err);
+    }
   };
 
-  /* ======================
-     Auto-refresh
-  ====================== */
+  // =========================
+  // Charger les messages
+  // =========================
+  const loadMessages = async () => {
+    try {
+      const res = await fetch(API_CHAT, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      const data = await res.json();
+      setMessages(data);
+    } catch (err) {
+      console.error("Erreur loadMessages", err);
+    }
+  };
+
+  // =========================
+  // Initialisation
+  // =========================
   useEffect(() => {
+    if (!token) return;
+
+    loadMe();
     loadMessages();
-    const interval = setInterval(loadMessages, 2000);
+
+    const interval = setInterval(loadMessages, 3000);
     return () => clearInterval(interval);
   }, []);
 
-  /* ======================
-     Scroll auto
-  ====================== */
+  // =========================
+  // Auto scroll
+  // =========================
   useEffect(() => {
     if (boxRef.current) {
       boxRef.current.scrollTop = boxRef.current.scrollHeight;
     }
   }, [messages]);
 
-  /* ======================
-     Sauver utilisateur
-  ====================== */
-  const saveUser = () => {
-    if (!draftUser.trim()) return;
-    setUsername(draftUser);
-    localStorage.setItem("chat_user", draftUser);
-  };
-
-  /* ======================
-     Déconnexion
-  ====================== */
-  const logout = () => {
-    localStorage.removeItem("chat_user");
-    setUsername("");
-    setDraftUser("");
-  };
-
-  /* ======================
-     Envoyer message
-  ====================== */
+  // =========================
+  // Envoyer message
+  // =========================
   const sendMessage = async () => {
-    if (!text.trim() || !username) return;
+    if (!text.trim()) return;
 
-    await fetch(API_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        username,
-        content: text,
-      }),
-    });
+    try {
+      const res = await fetch(API_CHAT, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ content: text }),
+      });
 
-    setText("");
-    loadMessages();
+      if (!res.ok) {
+        console.error("Erreur envoi message");
+        return;
+      }
+
+      setText("");
+      loadMessages();
+    } catch (err) {
+      console.error("Erreur sendMessage", err);
+    }
   };
 
-  /* ======================
-     Supprimer message
-  ====================== */
+  // =========================
+  // Supprimer message
+  // =========================
   const deleteMessage = async (id) => {
-    if (!window.confirm("Supprimer ce message ?")) return;
-
-    await fetch(`${API_URL}/${id}`, { method: "DELETE" });
-    loadMessages();
+    try {
+      await fetch(`${API_CHAT}/${id}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      loadMessages();
+    } catch (err) {
+      console.error("Erreur deleteMessage", err);
+    }
   };
+
+  // =========================
+  // Déconnexion
+  // =========================
+  const logout = () => {
+    localStorage.removeItem("token");
+    window.location.reload();
+  };
+
+  if (!me) return null;
 
   return (
     <div style={styles.page}>
       <div style={styles.card}>
         <h3 style={styles.title}>💬 Chat Collaboratif</h3>
 
-        {/* USER */}
-        {!username ? (
-          <div style={styles.userRow}>
-            <input
-              value={draftUser}
-              onChange={(e) => setDraftUser(e.target.value)}
-              placeholder="Ton nom"
-              style={styles.input}
-            />
-            <button onClick={saveUser} style={styles.button}>
-              OK
-            </button>
-          </div>
-        ) : (
-          <div style={styles.userInfo}>
-            <span>Connecté : <b>{username}</b></span>
-            <button onClick={logout} style={styles.logout}>
-              Changer
-            </button>
-          </div>
-        )}
+        <div style={styles.userRow}>
+          <span>
+            Connecté : <b>{me.username}</b>
+          </span>
+          <button onClick={logout} style={styles.logout}>
+            Déconnexion
+          </button>
+        </div>
 
-        {/* ACTIONS */}
-        <button onClick={loadMessages} style={styles.refresh}>
-          🔄 Actualiser
-        </button>
-
-        {/* MESSAGES */}
         <div ref={boxRef} style={styles.messages}>
           {messages.map((m) => (
             <div key={m.id} style={styles.message}>
@@ -128,7 +146,7 @@ export default function TeamChat() {
 
               <div>{m.content}</div>
 
-              {m.username === username && (
+              {m.user_id === me.id && (
                 <button
                   onClick={() => deleteMessage(m.id)}
                   style={styles.delete}
@@ -140,7 +158,6 @@ export default function TeamChat() {
           ))}
         </div>
 
-        {/* INPUT */}
         <div style={styles.inputRow}>
           <input
             value={text}
@@ -149,14 +166,7 @@ export default function TeamChat() {
             style={styles.input}
             onKeyDown={(e) => e.key === "Enter" && sendMessage()}
           />
-          <button
-            onClick={sendMessage}
-            style={{
-              ...styles.button,
-              opacity: text.trim() ? 1 : 0.5,
-            }}
-            disabled={!text.trim()}
-          >
+          <button onClick={sendMessage} style={styles.button}>
             Envoyer
           </button>
         </div>
@@ -165,70 +175,39 @@ export default function TeamChat() {
   );
 }
 
-/* ======================
-   STYLES
-====================== */
+// =========================
+// STYLES
+// =========================
 const styles = {
   page: {
-  minHeight: "100vh",
-  background: "#1e1e1e",
-  display: "flex",
-  justifyContent: "center",
-  alignItems: "center",   // ✅ IMPORTANT
-},
+    minHeight: "100vh",
+    background: "#1e1e1e",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+  },
   card: {
-  width: 360,
-  background: "#111",
-  borderRadius: 16,
-  padding: 16,
-  color: "#fff",
-  boxShadow: "0 0 30px rgba(0,0,0,0.7)",
-  margin: "0 auto",        // ✅ CENTRAGE FORCÉ
-},
-
+    width: 380,
+    background: "#111",
+    borderRadius: 16,
+    padding: 16,
+    color: "#fff",
+    boxShadow: "0 0 30px rgba(0,0,0,0.7)",
+  },
   title: {
     textAlign: "center",
-    marginBottom: 12,
+    marginBottom: 10,
   },
-  userRow: { display: "flex", gap: 8, marginBottom: 10 },
-  userInfo: {
+  userRow: {
     display: "flex",
     justifyContent: "space-between",
-    alignItems: "center",
     marginBottom: 10,
-    fontSize: 13,
+    fontSize: 14,
   },
   logout: {
     background: "none",
     border: "none",
     color: "#ff4d4d",
-    cursor: "pointer",
-  },
-  refresh: {
-    width: "100%",
-    marginBottom: 8,
-    background: "#2a2a2a",
-    border: "none",
-    color: "#ccc",
-    padding: 6,
-    borderRadius: 8,
-    cursor: "pointer",
-  },
-  inputRow: { display: "flex", gap: 8 },
-  input: {
-    flex: 1,
-    padding: 8,
-    borderRadius: 8,
-    border: "none",
-    background: "#2a2a2a",
-    color: "#fff",
-  },
-  button: {
-    background: "#6c63ff",
-    border: "none",
-    color: "#fff",
-    padding: "8px 14px",
-    borderRadius: 8,
     cursor: "pointer",
   },
   messages: {
@@ -245,7 +224,11 @@ const styles = {
     padding: 8,
     marginBottom: 8,
   },
-  meta: { fontSize: 12, opacity: 0.7 },
+  meta: {
+    fontSize: 12,
+    opacity: 0.7,
+    marginBottom: 4,
+  },
   delete: {
     marginTop: 6,
     background: "none",
@@ -253,5 +236,25 @@ const styles = {
     color: "#ff4d4d",
     cursor: "pointer",
     fontSize: 12,
+  },
+  inputRow: {
+    display: "flex",
+    gap: 8,
+  },
+  input: {
+    flex: 1,
+    padding: 8,
+    borderRadius: 8,
+    border: "none",
+    background: "#2a2a2a",
+    color: "#fff",
+  },
+  button: {
+    background: "#6c63ff",
+    border: "none",
+    color: "#fff",
+    padding: "8px 14px",
+    borderRadius: 8,
+    cursor: "pointer",
   },
 };

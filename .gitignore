@@ -1,2 +1,28 @@
-node_modules
-api-node/node_modules
+# Dependencies
+node_modules/
+api-node/node_modules/
+
+# Database
+*.db
+dev.db
+
+# Environment variables
+.env
+.env.local
+
+# Logs
+*.log
+npm-debug.log*
+
+# Runtime data
+pids
+*.pid
+*.seed
+
+# Coverage directory used by tools like istanbul
+coverage/
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
