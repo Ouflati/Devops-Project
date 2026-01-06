@@ -131,3 +131,58 @@ L'API utilise SQLite. Le fichier de base de données est généré automatiqueme
 
 - **Fichier** : `dev.db`
 - **Table** : `calendar`
+
+---
+
+## Interface Frontend – Calendar (Client React)
+
+Une interface utilisateur dédiée au calendrier a été développée en **React**, avec **Vite** comme outil de build et de développement dans le projet **client-react**, conformément à la consigne :  
+*« Chaque feature doit être développée dans une interface propre à elle »*.
+
+### Localisation du code
+client-react/
+└── src/
+    └── features/
+        └── calendar/
+            ├── CalendarPage.jsx
+            └── api/
+                └── calendar.js
+---
+
+### Fonctionnalités UI implémentées
+- Affichage de la liste des événements  
+- Création d’un événement  
+- Modification d’un événement  
+- Suppression d’un événement  
+- Filtrage et recherche côté interface  
+- Validation des champs côté frontend  
+---
+
+### Communication avec l’API
+L’interface frontend consomme l’API **Calendar** via les endpoints suivants :
+
+- `GET    /calendar`
+- `POST   /calendar`
+- `PUT    /calendar/:id`
+- `DELETE /calendar/:id`
+
+Les appels HTTP sont centralisés dans le fichier suivant :
+
+client-react/src/features/calendar/api/calendar.js
+---
+
+### Lancement du Frontend en local
+Depuis le dossier **client-react** :
+
+```bash
+npm install
+npm run dev
+
+L’interface est accessible par défaut à l’adresse suivante :
+
+http://localhost:5173
+---
+
+Remarque importante
+
+L’authentification étant développée dans une feature distincte, un user_id mock est temporairement utilisé côté frontend afin de permettre les tests fonctionnels de la feature
