@@ -184,7 +184,7 @@ npm install
 npm run dev
 ```
 
-L’interface est accessible par défaut à l’adresse suivante : `http://localhost:5173`
+L’interface est accessible par défaut à l’adresse suivante : [http://localhost:5173](http://localhost:5173)
 
 ---
 
