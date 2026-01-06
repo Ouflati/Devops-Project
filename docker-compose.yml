@@ -4,9 +4,10 @@ services:
     ports:
       - "8080:8080"
     volumes:
-      - ./dev.db:/app/dev.db  # Partage de la DB
+      - sqlite_data:/database
     environment:
-      - DB_PATH=/app/dev.db
+      - DB_PATH=/database/dev.db
+    # Pas besoin de créer le fichier, Go le créera dans ce volume
 
   api-node:
     build: ./api-node
@@ -15,18 +16,23 @@ services:
     volumes:
       - ./api-node:/app
       - /app/node_modules
-      - ./dev.db:/app/dev.db  # Partage de la même DB au même endroit
+      - sqlite_data:/database
     environment:
-      - PORT=3000 # On s'assure que Node utilise bien le port 3000
+      - PORT=3000
+      - DB_PATH=/database/dev.db
     depends_on:
       - api-golang
 
   client-react:
     build: ./client-react
     ports:
-      - "5173:5173"           # Port standard pour Vite
+      - "5173:5173"
     volumes:
       - ./client-react:/app
       - /app/node_modules
     depends_on:
       - api-node
+
+# Cette partie est l'astuce pour ne plus faire de "touch dev.db" manuellement
+volumes:
+  sqlite_data:
