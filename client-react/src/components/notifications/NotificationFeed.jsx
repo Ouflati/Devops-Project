@@ -2,8 +2,12 @@ import React from "react";
 
 const NotificationFeed = () => {
   return (
-    <div>
-      <h2>Notifications</h2>
+    <div className="notification-page">
+      <h1>Notifications</h1>
+
+      <div className="notification-list">
+        {/* Notifications will appear here */}
+      </div>
     </div>
   );
 };
