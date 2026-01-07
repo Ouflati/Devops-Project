@@ -1,5 +1,6 @@
 const { 
     getNotifications,
+    getNotificationsFiltered,
     getNotificationById,
     countUnread, 
     markAsRead, 
