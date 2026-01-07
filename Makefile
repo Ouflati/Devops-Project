@@ -60,7 +60,16 @@ install-api-golang:
 
 
 # ─────────────────────────────────────────────────────────────
-#  3. BUILD: Construit la version Production (Optimisée)
+#  3. TESTS: Tests Automatisés (CI/QA)
+# ─────────────────────────────────────────────────────────────
+# Commande ajoutée par Aymane pour la CI
+.PHONY: test-api
+test-api:
+	@echo "Lancement des tests API Node..."
+	cd api-node && npm test
+	
+# ─────────────────────────────────────────────────────────────
+#  4. BUILD: Construit la version Production (Optimisée)
 # ─────────────────────────────────────────────────────────────
 .PHONY: build
 build: clean
