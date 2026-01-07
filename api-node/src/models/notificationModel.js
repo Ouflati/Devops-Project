@@ -46,6 +46,17 @@ async function markAllAsRead(userId) {
   return result.changes;
 }
 
+async function getNotificationById(id, userId) {
+  const db = await openDb();
+  const notification = await db.get(
+    `SELECT * FROM notifications 
+     WHERE id = ? AND user_id = ?`,
+    [id, userId]
+  );
+  await db.close();
+  return notification;
+}
+
 async function createNotification(userId, type, message) {
   const db = await openDb();
   const result = await db.run(
@@ -57,10 +68,58 @@ async function createNotification(userId, type, message) {
   return result.lastID;
 }
 
+async function updateNotification(id, userId, updates) {
+  const db = await openDb();
+  const { type, message, is_read } = updates;
+  const fields = [];
+  const values = [];
+
+  if (type !== undefined) {
+    fields.push('type = ?');
+    values.push(type);
+  }
+  if (message !== undefined) {
+    fields.push('message = ?');
+    values.push(message);
+  }
+  if (is_read !== undefined) {
+    fields.push('is_read = ?');
+    values.push(is_read);
+  }
+
+  if (fields.length === 0) {
+    await db.close();
+    return false;
+  }
+
+  values.push(id, userId);
+  const result = await db.run(
+    `UPDATE notifications SET ${fields.join(', ')} 
+     WHERE id = ? AND user_id = ?`,
+    values
+  );
+  await db.close();
+  return result.changes > 0;
+}
+
+async function deleteNotification(id, userId) {
+  const db = await openDb();
+  const result = await db.run(
+    `DELETE FROM notifications 
+     WHERE id = ? AND user_id = ?`,
+    [id, userId]
+  );
+  await db.close();
+  return result.changes > 0;
+}
+
 module.exports = {
   getNotifications,
+  getNotificationById,
   countUnread,
   markAsRead,
   markAllAsRead,
-  createNotification
+  createNotification,
+  updateNotification,
+  deleteNotification
 };
