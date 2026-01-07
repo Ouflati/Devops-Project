@@ -1,4 +1,4 @@
-const API_URL = 'http://localhost:3000/auth';
+const API_URL = '/api/node/auth';
 
 export async function register(data) {
   return fetch(`${API_URL}/register`, {
@@ -19,7 +19,7 @@ export async function login(data) {
 export async function me(token) {
   return fetch(`${API_URL}/me`, {
     headers: {
-      'Authorization': `Bearer ${token}`
+      Authorization: `Bearer ${token}`
     }
   }).then(res => res.json());
 }
@@ -29,7 +29,7 @@ export async function changePassword(token, data) {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
+      Authorization: `Bearer ${token}`
     },
     body: JSON.stringify(data)
   }).then(res => res.json());
