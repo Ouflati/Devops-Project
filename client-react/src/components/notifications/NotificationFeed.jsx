@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react";
 import NotificationItem from "./NotificationItem";
+import "./notifications.css";
 
 const NotificationFeed = () => {
   const [notifications, setNotifications] = useState([
@@ -55,109 +56,70 @@ const NotificationFeed = () => {
 
   return (
     <div className="notification-page">
-      <h1>Notifications</h1>
-      <p>{unreadCount} unread notifications</p>
-
-      <div
-        style={{
-          display: "flex",
-          gap: 10,
-          margin: "14px 0",
-          flexWrap: "wrap",
-          alignItems: "center",
-        }}
-      >
-        <button
-          onClick={() => setActiveFilter("all")}
-          style={{
-            padding: "8px 14px",
-            borderRadius: 10,
-            border: "1px solid #ddd",
-            cursor: "pointer",
-            background: activeFilter === "all" ? "#3b82f6" : "#f3f4f6",
-            color: activeFilter === "all" ? "white" : "#111",
-            fontWeight: 600,
-          }}
-        >
-          All ({allCount})
-        </button>
-
-        <button
-          onClick={() => setActiveFilter("unread")}
-          style={{
-            padding: "8px 14px",
-            borderRadius: 10,
-            border: "1px solid #ddd",
-            cursor: "pointer",
-            background: activeFilter === "unread" ? "#3b82f6" : "#f3f4f6",
-            color: activeFilter === "unread" ? "white" : "#111",
-            fontWeight: 600,
-          }}
-        >
-          Unread ({unreadCount})
-        </button>
-
-        <div style={{ flex: 1 }} />
-
-        <button
-          onClick={handleMarkAllAsRead}
-          disabled={notifications.length === 0 || unreadCount === 0}
-          style={{
-            padding: "8px 14px",
-            borderRadius: 10,
-            border: "1px solid #ddd",
-            cursor: "pointer",
-            background:
-              notifications.length === 0 || unreadCount === 0 ? "#e5e7eb" : "#111",
-            color:
-              notifications.length === 0 || unreadCount === 0 ? "#6b7280" : "white",
-            fontWeight: 600,
-          }}
-        >
-          Mark all as read
-        </button>
-
-        <button
-          onClick={handleClearAll}
-          disabled={notifications.length === 0}
-          style={{
-            padding: "8px 14px",
-            borderRadius: 10,
-            border: "1px solid #ddd",
-            cursor: "pointer",
-            background: notifications.length === 0 ? "#e5e7eb" : "#ef4444",
-            color: notifications.length === 0 ? "#6b7280" : "white",
-            fontWeight: 600,
-          }}
-        >
-          Clear all
-        </button>
-      </div>
-
-      <div className="notification-list" style={{ display: "grid", gap: 12 }}>
-        {filteredNotifications.length === 0 ? (
-          <div
-            style={{
-              padding: 16,
-              borderRadius: 12,
-              border: "1px dashed #cbd5e1",
-              color: "#6b7280",
-            }}
-          >
-            No notifications to show.
+      <div className="notification-wrapper">
+        <div className="notification-header-card">
+          <div className="notification-header">
+            <div>
+              <h1 className="notification-title">Notifications</h1>
+              <p className="notification-subtitle">{unreadCount} unread notifications</p>
+            </div>
           </div>
-        ) : (
-          filteredNotifications.map((n) => (
-            <NotificationItem
-              key={n.id}
-              icon={n.icon}
-              title={n.title}
-              message={n.message}
-              time={n.time}
-              isRead={n.isRead}
-            />
-          ))
-        )}
+
+          <div className="notification-toolbar">
+            <div className="notification-tabs">
+              <button
+                type="button"
+                onClick={() => setActiveFilter("all")}
+                className={`btn ${activeFilter === "all" ? "btn-primary" : ""}`}
+              >
+                All ({allCount})
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveFilter("unread")}
+                className={`btn ${activeFilter === "unread" ? "btn-primary" : ""}`}
+              >
+                Unread ({unreadCount})
+              </button>
+            </div>
+
+            <div className="spacer" />
+
+            <button
+              onClick={handleMarkAllAsRead}
+              disabled={notifications.length === 0 || unreadCount === 0}
+              className="btn"
+            >
+              Mark all as read
+            </button>
+
+            <button
+              onClick={handleClearAll}
+              disabled={notifications.length === 0}
+              className={`btn ${notifications.length === 0 ? "" : "btn-danger"}`}
+            >
+              Clear all
+            </button>
+          </div>
+        </div>
+
+        <div className="notification-list">
+          {filteredNotifications.length === 0 ? (
+            <div className="empty-state">No notifications to show.</div>
+          ) : (
+            filteredNotifications.map((n) => (
+              <NotificationItem
+                key={n.id}
+                icon={n.icon}
+                title={n.title}
+                message={n.message}
+                time={n.time}
+                isRead={n.isRead}
+              />
+            ))
+          )}
+        </div>
       </div>
     </div>
   );

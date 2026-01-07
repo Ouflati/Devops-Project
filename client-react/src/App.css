@@ -1,8 +1,10 @@
 #root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+  min-height: 100vh;
+}
+
+body {
+  background: radial-gradient(circle at top, #0b1c33 0%, #060d1a 45%, #030712 100%);
+  color: #e5e7eb;
 }
 
 .logo {
