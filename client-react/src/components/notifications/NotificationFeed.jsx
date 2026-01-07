@@ -29,18 +29,61 @@ const NotificationFeed = () => {
     },
   ]);
 
+  const [activeFilter, setActiveFilter] = useState("all");
+
+  const allCount = notifications.length;
+
   const unreadCount = useMemo(
     () => notifications.filter((n) => !n.isRead).length,
     [notifications]
   );
+
+  const filteredNotifications = useMemo(() => {
+    if (activeFilter === "unread") {
+      return notifications.filter((n) => !n.isRead);
+    }
+    return notifications;
+  }, [notifications, activeFilter]);
 
   return (
     <div className="notification-page">
       <h1>Notifications</h1>
       <p>{unreadCount} unread notifications</p>
 
+      <div style={{ display: "flex", gap: 10, margin: "14px 0" }}>
+        <button
+          onClick={() => setActiveFilter("all")}
+          style={{
+            padding: "8px 14px",
+            borderRadius: 10,
+            border: "1px solid #ddd",
+            cursor: "pointer",
+            background: activeFilter === "all" ? "#3b82f6" : "#f3f4f6",
+            color: activeFilter === "all" ? "white" : "#111",
+            fontWeight: 600,
+          }}
+        >
+          All ({allCount})
+        </button>
+
+        <button
+          onClick={() => setActiveFilter("unread")}
+          style={{
+            padding: "8px 14px",
+            borderRadius: 10,
+            border: "1px solid #ddd",
+            cursor: "pointer",
+            background: activeFilter === "unread" ? "#3b82f6" : "#f3f4f6",
+            color: activeFilter === "unread" ? "white" : "#111",
+            fontWeight: 600,
+          }}
+        >
+          Unread ({unreadCount})
+        </button>
+      </div>
+
       <div className="notification-list" style={{ display: "grid", gap: 12 }}>
-        {notifications.map((n) => (
+        {filteredNotifications.map((n) => (
           <NotificationItem
             key={n.id}
             icon={n.icon}
