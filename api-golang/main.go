@@ -1,14 +1,15 @@
 package main
 
 import (
-	"io/ioutil"
 	"log"
-	"os"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"api-golang/routes"
 
 	"api-golang/database"
+	"github.com/gin-contrib/cors"
+
 )
 
 func init() {
@@ -23,6 +24,12 @@ func init() {
 func main() {
 
 	r := gin.Default()
+	r.SetTrustedProxies(nil)
+	r.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"http://localhost:5173"},
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Content-Type"},
+	}))
 	var tm time.Time
 
 	r.GET("/", func(c *gin.Context) {
@@ -37,6 +44,14 @@ func main() {
 		tm = database.GetTime(c)
 		c.JSON(200, "pong")
 	})
+	r.GET("/calendar", routes.GetCalendar)
+	r.POST("/calendar", routes.CreateCalendar)
+	r.GET("/calendar/:id", routes.GetCalendarByID)
+	r.PUT("/calendar/:id", routes.UpdateCalendar)
+	r.DELETE("/calendar/:id", routes.DeleteCalendar)
+
 
 	r.Run() // listen and serve on 0.0.0.0:8080 (or "PORT" env var)
+
 }
+

@@ -1,0 +1,2 @@
+ALTER TABLE calendar ADD COLUMN start_time TEXT DEFAULT '00:00';
+ALTER TABLE calendar ADD COLUMN end_time   TEXT DEFAULT '00:00';
