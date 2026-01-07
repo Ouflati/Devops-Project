@@ -2,13 +2,18 @@ name: React Frontend CI
 
 on:
   push:
-    branches: [ main, master ] 
+    branches: [ main, master, feature/Poll ] 
   pull_request:
     branches: [ main, master ]
 
 jobs:
   test-frontend:
     runs-on: ubuntu-latest
+    
+    
+    defaults:
+      run:
+        working-directory: client-react
 
     steps:
     - name: Checkout code
@@ -20,11 +25,7 @@ jobs:
         node-version: '18'
 
     - name: Install Dependencies
-      run: |
-        cd client-react
-        npm install
+      run: npm install # Daba ghadi it-installa f blastou mzn
 
     - name: Run Tests
-      run: |
-        cd client-react
-        npm test -- --watchAll=false
+      run: npm test -- --watchAll=false
