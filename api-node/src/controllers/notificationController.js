@@ -11,9 +11,20 @@ const {
 
 exports.getNotifications = async (req, res) => {
   try {
-    const userId = req.userId; 
+    const userId = req.userId;
     const limit = parseInt(req.query.limit) || 10;
     const offset = parseInt(req.query.offset) || 0;
+
+    // NEW: ergonomics
+    const isRead = req.query.is_read; // '0' | '1'
+    const type = req.query.type; // e.g. 'message'
+    const sort = (req.query.sort || 'desc').toLowerCase(); // 'asc' | 'desc'
+    const withMeta = req.query.meta === 'true';
+
+    if (withMeta || isRead !== undefined || type || sort) {
+      const { items, total } = await getNotificationsFiltered(userId, { limit, offset, isRead, type, sort });
+      return res.json({ items, meta: { total, limit, offset } });
+    }
 
     const notifications = await getNotifications(userId, limit, offset);
     res.json(notifications);

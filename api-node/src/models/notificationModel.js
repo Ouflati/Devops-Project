@@ -13,6 +13,41 @@ async function getNotifications(userId, limit = 10, offset = 0) {
   return notifications;
 }
 
+// NEW: Filtered + meta-aware fetch (returns items and total)
+async function getNotificationsFiltered(userId, { limit = 10, offset = 0, isRead, type, sort = 'desc' } = {}) {
+  const db = await openDb();
+
+  const whereClauses = ['user_id = ?'];
+  const params = [userId];
+
+  if (isRead !== undefined && isRead !== null && isRead !== '') {
+    whereClauses.push('is_read = ?');
+    params.push(Number(isRead));
+  }
+  if (type) {
+    whereClauses.push('type = ?');
+    params.push(type);
+  }
+
+  const whereSQL = whereClauses.length ? `WHERE ${whereClauses.join(' AND ')}` : '';
+  const orderSQL = sort && sort.toLowerCase() === 'asc' ? 'ORDER BY created_at ASC' : 'ORDER BY created_at DESC';
+
+  // Total count
+  const totalRow = await db.get(
+    `SELECT COUNT(*) as total FROM notifications ${whereSQL}`,
+    params
+  );
+
+  // Paged items
+  const items = await db.all(
+    `SELECT * FROM notifications ${whereSQL} ${orderSQL} LIMIT ? OFFSET ?`,
+    [...params, limit, offset]
+  );
+
+  await db.close();
+  return { items, total: totalRow ? totalRow.total : 0 };
+}
+
 async function countUnread(userId) {
   const db = await openDb();
   const result = await db.get(
@@ -115,6 +150,7 @@ async function deleteNotification(id, userId) {
 
 module.exports = {
   getNotifications,
+  getNotificationsFiltered,
   getNotificationById,
   countUnread,
   markAsRead,

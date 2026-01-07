@@ -1,57 +1,59 @@
-import React, { useMemo, useState } from "react";
+import React, { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import NotificationItem from "./NotificationItem";
 import "./notifications.css";
+import { fetchNotifications, fetchUnreadCount, markAllNotificationsRead, deleteNotification, markNotificationRead } from "../../api";
 
-const NotificationFeed = () => {
-  const [notifications, setNotifications] = useState([
-    {
-      id: 1,
-      icon: "!",
-      title: "New Message",
-      message: "Hey! Are we still meeting tomorrow?",
-      time: "5m ago",
-      isRead: false,
-    },
-    {
-      id: 2,
-      icon: "✓",
-      title: "Task Updated",
-      message: 'Your task "Notifications UI" was updated.',
-      time: "30m ago",
-      isRead: true,
-    },
-    {
-      id: 3,
-      icon: "★",
-      title: "New Comment",
-      message: 'Someone commented: "Looks great!"',
-      time: "2h ago",
-      isRead: false,
-    },
-  ]);
-
+const NotificationFeed = ({ token }) => {
+  const queryClient = useQueryClient();
   const [activeFilter, setActiveFilter] = useState("all");
 
-  const allCount = notifications.length;
+  const isReadParam = activeFilter === "unread" ? 0 : undefined;
 
-  const unreadCount = useMemo(
-    () => notifications.filter((n) => !n.isRead).length,
-    [notifications]
-  );
+  const { data: listData, isLoading: listLoading } = useQuery({
+    queryKey: ["notifications", { is_read: isReadParam }],
+    queryFn: () => fetchNotifications(token, { limit: 10, offset: 0, is_read: isReadParam, meta: true }),
+    enabled: !!token,
+  });
 
-  const filteredNotifications = useMemo(() => {
-    if (activeFilter === "unread") {
-      return notifications.filter((n) => !n.isRead);
-    }
-    return notifications;
-  }, [notifications, activeFilter]);
+  const notifications = listData?.items || [];
+  const allCount = listData?.meta?.total ?? notifications.length;
 
-  const handleMarkAllAsRead = () => {
-    setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
-  };
+  const { data: unreadData } = useQuery({
+    queryKey: ["notifications", "unread-count"],
+    queryFn: () => fetchUnreadCount(token),
+    enabled: !!token,
+  });
 
+  const unreadCount = unreadData?.unreadCount ?? 0;
+
+  const markAllMutation = useMutation({
+    mutationFn: () => markAllNotificationsRead(token),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+      queryClient.invalidateQueries({ queryKey: ["notifications", "unread-count"] });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id) => deleteNotification(token, id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+      queryClient.invalidateQueries({ queryKey: ["notifications", "unread-count"] });
+    },
+  });
+
+  const markReadMutation = useMutation({
+    mutationFn: (id) => markNotificationRead(token, id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+      queryClient.invalidateQueries({ queryKey: ["notifications", "unread-count"] });
+    },
+  });
+
+  const handleMarkAllAsRead = () => markAllMutation.mutate();
   const handleClearAll = () => {
-    setNotifications([]);
+    notifications.forEach(n => deleteMutation.mutate(n.id));
   };
 
   return (
@@ -88,37 +90,43 @@ const NotificationFeed = () => {
 
             <button
               onClick={handleMarkAllAsRead}
-              disabled={notifications.length === 0 || unreadCount === 0}
+              disabled={!notifications.length || unreadCount === 0 || markAllMutation.isLoading}
               className="btn"
             >
-              Mark all as read
+              {markAllMutation.isLoading ? "Marking..." : "Mark all as read"}
             </button>
 
             <button
               onClick={handleClearAll}
-              disabled={notifications.length === 0}
+              disabled={!notifications.length || deleteMutation.isLoading}
               className={`btn ${notifications.length === 0 ? "" : "btn-danger"}`}
             >
-              Clear all
+              {deleteMutation.isLoading ? "Deleting..." : "Delete all"}
             </button>
           </div>
         </div>
-
         <div className="notification-list">
-          {filteredNotifications.length === 0 ? (
+          {listLoading && <div className="empty-state">Loading notifications...</div>}
+          {!listLoading && notifications.length === 0 && (
             <div className="empty-state">No notifications to show.</div>
-          ) : (
-            filteredNotifications.map((n) => (
-              <NotificationItem
-                key={n.id}
-                icon={n.icon}
-                title={n.title}
-                message={n.message}
-                time={n.time}
-                isRead={n.isRead}
-              />
-            ))
           )}
+          {!listLoading && notifications.map((n) => (
+            <div key={n.id}>
+              <NotificationItem
+                icon={"🔔"}
+                title={n.type}
+                message={n.message}
+                time={new Date(n.created_at).toLocaleString()}
+                isRead={!!n.is_read}
+              />
+              <div className="notification-actions">
+                {!n.is_read && (
+                  <button className="btn" onClick={() => markReadMutation.mutate(n.id)}>Mark read</button>
+                )}
+                <button className="btn btn-danger" onClick={() => deleteMutation.mutate(n.id)}>Delete</button>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     </div>

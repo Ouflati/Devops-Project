@@ -2,7 +2,7 @@ import { useState } from "react";
 
 const API = "/api/node/auth";
 
-export default function AuthApp() {
+export default function AuthApp({ onToken }) {
   const [mode, setMode] = useState("login"); // login | register
   const [form, setForm] = useState({
     username: "",
@@ -47,6 +47,7 @@ export default function AuthApp() {
     });
     if (res.token) {
       setToken(res.token);
+      if (onToken) onToken(res.token);
       setMessage("Login réussi");
     } else {
       setMessage(JSON.stringify(res));
