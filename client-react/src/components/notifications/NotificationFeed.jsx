@@ -1,14 +1,11 @@
-import React from 'react'
-import { NotificationItem } from './'
+import React from "react";
 
-const NotificationFeed = ({ notifications = [] }) => {
+const NotificationFeed = () => {
   return (
-    <div data-testid="notification-feed">
-      {notifications.map((n) => (
-        <NotificationItem key={n.id ?? n.timestamp ?? Math.random()} notification={n} />
-      ))}
+    <div>
+      <h2>Notifications</h2>
     </div>
-  )
-}
+  );
+};
 
-export default NotificationFeed
+export default NotificationFeed;
