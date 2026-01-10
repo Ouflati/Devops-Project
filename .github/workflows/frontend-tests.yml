@@ -1,0 +1,34 @@
+name: React Frontend CI
+
+on:
+  push:
+    branches: [ main, master, feature/Poll ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  test-frontend:
+    runs-on: ubuntu-latest
+    
+    defaults:
+      run:
+        working-directory: client-react
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'npm' 
+        cache-dependency-path: client-react/package-lock.json
+
+    - name: Install Dependencies
+      run: npm install
+
+    - name: Run Tests
+      run: npm test -- --watchAll=false
+      env:
+        CI: true

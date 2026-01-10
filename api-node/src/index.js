@@ -4,7 +4,7 @@ const express = require('express');
 const morgan = require('morgan');
 
 const app = express();
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 5000;
 
 // setup the logger
 app.use(morgan('tiny'));
@@ -27,7 +27,8 @@ app.get('/ping', async (_, res) => {
   res.send('pong');
 });
 
-const server = app.listen(port, () => {
+// Remplacez l'ancienne version par celle-ci
+const server = app.listen(port, '0.0.0.0', () => {
   console.log(`Example app listening on port ${port}`);
 });
 

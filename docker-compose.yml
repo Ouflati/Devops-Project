@@ -1,0 +1,41 @@
+services:
+  api-golang:
+    build: ./api-golang
+    ports:
+      - "8080:8080"
+    volumes:
+      # ✅ HNA L-FER9: Kandiro mapping direct m3a fichier local
+      # ./dev.db (PC) -> /app/dev.db (Docker)
+      - ./dev.db:/app/dev.db
+    environment:
+      # Gol l l-code fin yl9a database
+      - DB_PATH=/app/dev.db
+
+  api-node:
+    build: ./api-node
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./api-node:/app
+      - /app/node_modules
+      # ✅ Node ta hwa ychouf nefs database ila bgha
+      - ./dev.db:/app/dev.db
+    environment:
+      - PORT=3000
+      - DB_PATH=/app/dev.db
+    depends_on:
+      - api-golang
+
+  client-react:
+    build: ./client-react
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./client-react:/app
+      - /app/node_modules
+    depends_on:
+      - api-node
+
+# ❌ HADI MA B9ITICH M7TAJHA (7it st3mlna fichier local)
+# volumes:
+#   sqlite_data:

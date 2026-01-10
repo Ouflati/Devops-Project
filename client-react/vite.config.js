@@ -4,21 +4,21 @@ import dns from 'dns';
 
 dns.setDefaultResultOrder('verbatim');
 
-// https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
   server: {
+    host: '0.0.0.0', // Permet l'accès externe au container
     proxy: {
       '/api/golang': {
-        target: 'http://localhost:8080',
+        // Remplace localhost par le nom du service dans docker-compose
+        target: 'http://api-golang:8080', 
         changeOrigin: true,
-        //timeout: 5000,          // add a delay so react start last  after node and go servers
-        //proxyTimeout: 5000,     // 
         rewrite: (path) => path.replace(/^\/api\/golang/, ''),
         secure: false,
       },
       '/api/node': {
-        target: 'http://localhost:3000',
+        // Remplace localhost par le nom du service dans docker-compose
+        target: 'http://api-node:3000', 
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api\/node/, ''),
         secure: false,

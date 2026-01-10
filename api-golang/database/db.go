@@ -1,51 +1,75 @@
-// api-golang/database/db.go
-// SQLite version for Step 1 & 2 – NO Docker, NO Postgres
 package database
 
 import (
 	"database/sql"
 	"os"
-	"runtime" // prevent golang from running
-	"path/filepath"
 
 	"github.com/gin-gonic/gin"
 	_ "github.com/mattn/go-sqlite3" // SQLite driver
 )
 
-var db *sql.DB
+// DB est accessible globalement
+var DB *sql.DB
 
-// InitDB initializes the shared SQLite database (dev.db in project root)
 func InitDB() error {
-	// Calculate path: go up two levels from this file → project root
-	_, currentFile, _, _ := runtime.Caller(0)
-	rootDir := filepath.Dir(filepath.Dir(filepath.Dir(currentFile)))
-	dbPath := filepath.Join(rootDir, "dev.db")
+	dbPath := os.Getenv("DB_PATH")
+	if dbPath == "" {
+		dbPath = "./dev.db"
+	}
 
-	// Open (and create if not exists) the SQLite file
 	var err error
-	db, err = sql.Open("sqlite3", dbPath+"?cache=shared&mode=rwc&_fk=1")
+	// Options: cache=shared, mode=rwc, _fk=1 (active foreign keys)
+	DB, err = sql.Open("sqlite3", dbPath+"?cache=shared&mode=rwc&_fk=1")
 	if err != nil {
 		return err
 	}
 
-	// Test the connection
-	return db.Ping()
+	// Schéma aligné EXACTEMENT sur repository.go
+	schema := `
+	CREATE TABLE IF NOT EXISTS polls (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		question TEXT NOT NULL,
+		type TEXT CHECK(type IN ('single', 'multiple')) NOT NULL,
+		created_by INTEGER NOT NULL,
+		is_closed BOOLEAN DEFAULT 0,
+		ends_at DATETIME,
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+	);
+
+	CREATE TABLE IF NOT EXISTS poll_options (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		poll_id INTEGER NOT NULL,
+		option_text TEXT NOT NULL,  -- ✅ Correction: "option_text" machi "text"
+		FOREIGN KEY (poll_id) REFERENCES polls(id) ON DELETE CASCADE
+	);
+
+	-- ✅ Correction: Table "votes" simple bach tmchi m3a Repository
+	CREATE TABLE IF NOT EXISTS votes (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		poll_id INTEGER NOT NULL,
+		option_id INTEGER NOT NULL,
+		user_id INTEGER NOT NULL,
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		UNIQUE (poll_id, user_id, option_id),
+		FOREIGN KEY (poll_id) REFERENCES polls(id) ON DELETE CASCADE,
+		FOREIGN KEY (option_id) REFERENCES poll_options(id) ON DELETE CASCADE
+	);`
+
+	_, err = DB.Exec(schema)
+	if err != nil {
+		return err
+	}
+
+	return DB.Ping()
 }
 
-// GetTime returns the current time from SQLite
-// Same signature as the original Postgres version → zero code changes elsewhere
 func GetTime(ctx *gin.Context) string {
-
 	var now string
-
-	// SQLite: datetime('now') or CURRENT_TIMESTAMP both work
-	row := db.QueryRow("SELECT datetime('now', 'localtime')")
+	row := DB.QueryRow("SELECT datetime('now', 'localtime')")
 	err := row.Scan(&now)
 	if err != nil {
-		// In real apps you would return an error, but we keep original behavior
-		// (crash loudly so students see something is wrong)
 		os.Stderr.WriteString("SQLite query failed: " + err.Error() + "\n")
-		os.Exit(1)
+		return "Error fetching time"
 	}
 	return now
 }

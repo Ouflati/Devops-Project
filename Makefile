@@ -1,32 +1,16 @@
-# ─────────────────────────────────────────────────────────────
-# One single command students will use every day
-# ─────────────────────────────────────────────────────────────
 .PHONY: dev
 dev:
-	@echo "Starting full stack, using local SQLite (dev.db)"
-	@echo "   React  → http://localhost:5173"
-	@echo "   Node   → http://localhost:3000"
-	@echo "   Go     → http://localhost:8080"
-	@make -j4 run-client-react run-api-node run-api-golang run-postgres-sqlite
+	@echo "Starting full stack via Docker..."
+	@echo "React  → http://localhost:5173"
+	@echo "Node   → http://localhost:5000"
+	@echo "Go     → http://localhost:8080"
+	docker-compose up --build
 
-# ─────────────────────────────────────────────────────────────
-# Fake target just to show a nice message 
-# ─────────────────────────────────────────────────────────────
-.PHONY: run-sqlite
-run-sqlite:
-	@echo "SQLite database → ./dev.db (auto-created, git-ignored) "
+.PHONY: down
+down:
+	docker-compose down
 
-.PHONY: run-api-node
-run-api-node:
-	@echo Starting node api
-	cd api-node && npm run dev
-
-.PHONY: run-api-golang
-run-api-golang:
-	@echo Starting golang api
-	cd api-golang && go run main.go
-
-.PHONY: run-client-react
-run-client-react:
-	@echo Starting react client
-	cd client-react && npm run dev
+.PHONY: clean
+clean:
+	docker-compose down -v
+	@echo "Containers and Volumes cleared."
