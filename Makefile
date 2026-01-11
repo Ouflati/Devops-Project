@@ -2,7 +2,7 @@
 #  1. DEV: Mode développement (Hot reload)
 # ─────────────────────────────────────────────────────────────
 .PHONY: dev
-dev:
+dev: prepare
 	@echo "Starting full stack, using local SQLite (dev.db)"
 	@echo "   React  → http://localhost:5173"
 	@echo "   Node   → http://localhost:3000"
@@ -124,3 +124,32 @@ restart: clean dev
 status:
 	@echo "Vérification des ports (3000, 8080, 5173)..."
 	netstat -an | findstr "3000 8080 5173"
+# ─────────────────────────────────────────────────────────────
+#  0. PRÉPARATION AUTOMATIQUE (ENV + DATABASE)
+#  - Vérifie que le fichier .env existe
+#  - Lance la migration SQLite (création des tables)
+# ─────────────────────────────────────────────────────────────
+
+.PHONY: prepare
+prepare: check-env migrate-db
+	@echo "Préparation terminée (env + database OK)"
+
+# Vérifie que le fichier .env existe
+.PHONY: check-env
+check-env:
+	@if [ ! -f api-node/.env ]; then \
+		echo "❌ ERREUR: api-node/.env manquant"; \
+		echo "➡️  Crée le fichier api-node/.env avant de continuer"; \
+		exit 1; \
+	else \
+		echo "✅ .env trouvé"; \
+	fi
+
+# Lance la migration SQLite (création des tables)
+.PHONY: migrate-db
+migrate-db:
+	@echo "🗄️ Création des tables SQLite"
+	cd api-node && node src/database/migrate.js
+
+
+

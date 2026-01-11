@@ -11,146 +11,112 @@ export default function TeamChat() {
 
   const token = localStorage.getItem("token");
 
-  // =========================
-  // Récupérer l'utilisateur connecté
-  // =========================
+  // 🚨 SÉCURITÉ : pas de token = retour login
+  useEffect(() => {
+    if (!token) {
+      window.location.reload();
+    }
+  }, [token]);
+
+  // 🔐 Charger utilisateur
   const loadMe = async () => {
     try {
       const res = await fetch(API_ME, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` }
       });
+
+      if (!res.ok) throw new Error("Unauthorized");
+
       const data = await res.json();
       setMe(data);
-    } catch (err) {
-      console.error("Erreur loadMe", err);
+    } catch {
+      logout(); // ⬅️ TOKEN INVALID → LOGOUT
     }
   };
 
-  // =========================
-  // Charger les messages
-  // =========================
+  // 💬 Charger messages
   const loadMessages = async () => {
     try {
       const res = await fetch(API_CHAT, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` }
       });
+
+      if (!res.ok) return;
+
       const data = await res.json();
-      setMessages(data);
-    } catch (err) {
-      console.error("Erreur loadMessages", err);
-    }
+      setMessages(Array.isArray(data) ? data : []);
+    } catch {}
   };
 
-  // =========================
-  // Initialisation
-  // =========================
   useEffect(() => {
-    if (!token) return;
-
     loadMe();
     loadMessages();
-
-    const interval = setInterval(loadMessages, 5000);
-    return () => clearInterval(interval);
+    const i = setInterval(loadMessages, 5000);
+    return () => clearInterval(i);
   }, []);
 
-  // =========================
-  // Auto scroll
-  // =========================
   useEffect(() => {
-    if (boxRef.current) {
-      boxRef.current.scrollTop = boxRef.current.scrollHeight;
-    }
+    boxRef.current?.scrollTo(0, boxRef.current.scrollHeight);
   }, [messages]);
 
-  // =========================
-  // Envoyer message
-  // =========================
   const sendMessage = async () => {
     if (!text.trim()) return;
 
-    try {
-      const res = await fetch(API_CHAT, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ content: text }),
-      });
+    await fetch(API_CHAT, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({ content: text })
+    });
 
-      if (!res.ok) {
-        console.error("Erreur envoi message");
-        return;
-      }
-
-      setText("");
-      loadMessages();
-    } catch (err) {
-      console.error("Erreur sendMessage", err);
-    }
+    setText("");
+    loadMessages();
   };
 
-  // =========================
-  // Supprimer message
-  // =========================
   const deleteMessage = async (id) => {
-    try {
-      await fetch(`${API_CHAT}/${id}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      loadMessages();
-    } catch (err) {
-      console.error("Erreur deleteMessage", err);
-    }
+    await fetch(`${API_CHAT}/${id}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    loadMessages();
   };
 
-  // =========================
-  // Déconnexion
-  // =========================
   const logout = () => {
     localStorage.removeItem("token");
     window.location.reload();
   };
 
-  if (!me) return null;
+  // ⏳ Chargement NORMAL
+  if (!me) {
+    return (
+      <div style={{ color: "#fff", textAlign: "center", marginTop: 100 }}>
+        Chargement...
+      </div>
+    );
+  }
 
   return (
     <div style={styles.page}>
       <div style={styles.card}>
-        <h3 style={styles.title}>💬 Chat Collaboratif</h3>
+        <h3>💬 Chat Collaboratif</h3>
 
         <div style={styles.userRow}>
-          <span>
-            Connecté : <b>{me.username}</b>
-          </span>
-          <button onClick={logout} style={styles.logout}>
-            Déconnexion
-          </button>
+          <span>Connecté : <b>{me.username}</b></span>
+          <button style={styles.logout} onClick={logout}>Déconnexion</button>
         </div>
 
         <div ref={boxRef} style={styles.messages}>
-          {messages.map((m) => (
+          {messages.map(m => (
             <div key={m.id} style={styles.message}>
               <div style={styles.meta}>
-                <b>{m.username}</b> •{" "}
-                {new Date(m.created_at).toLocaleString()}
+                <b>{m.username}</b> • {new Date(m.created_at).toLocaleString()}
               </div>
-
               <div>{m.content}</div>
 
               {m.user_id === me.id && (
-                <button
-                  onClick={() => deleteMessage(m.id)}
-                  style={styles.delete}
-                >
+                <button style={styles.delete} onClick={() => deleteMessage(m.id)}>
                   Supprimer
                 </button>
               )}
@@ -160,101 +126,93 @@ export default function TeamChat() {
 
         <div style={styles.inputRow}>
           <input
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            placeholder="Écris un message..."
             style={styles.input}
-            onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+            value={text}
+            onChange={e => setText(e.target.value)}
+            onKeyDown={e => e.key === "Enter" && sendMessage()}
+            placeholder="Écris un message..."
           />
-          <button onClick={sendMessage} style={styles.button}>
-            Envoyer
-          </button>
+          <button style={styles.button} onClick={sendMessage}>Envoyer</button>
         </div>
       </div>
     </div>
   );
 }
-
-// =========================
-// STYLES
-// =========================
 const styles = {
   page: {
     minHeight: "100vh",
-    background: "#1e1e1e",
+    background: "linear-gradient(135deg,#141e30,#243b55)",
     display: "flex",
     justifyContent: "center",
-    alignItems: "center",
+    alignItems: "center"
   },
   card: {
-    width: 380,
-    background: "#111",
+    width: 420,
+    background: "#0f172a",
+    padding: 20,
     borderRadius: 16,
-    padding: 16,
-    color: "#fff",
-    boxShadow: "0 0 30px rgba(0,0,0,0.7)",
-  },
-  title: {
-    textAlign: "center",
-    marginBottom: 10,
+    color: "#e5e7eb",
+    boxShadow: "0 20px 40px rgba(0,0,0,.6)"
   },
   userRow: {
     display: "flex",
     justifyContent: "space-between",
-    marginBottom: 10,
-    fontSize: 14,
+    marginBottom: 10
   },
   logout: {
-    background: "none",
+    background: "#ef4444",
     border: "none",
-    color: "#ff4d4d",
-    cursor: "pointer",
+    color: "#fff",
+    padding: "6px 12px",
+    borderRadius: 8,
+    cursor: "pointer"
   },
   messages: {
-    height: 320,
+    height: 300,
     overflowY: "auto",
-    background: "#0c0c0c",
-    borderRadius: 10,
-    padding: 10,
-    marginBottom: 10,
+    background: "#020617",
+    padding: 12,
+    borderRadius: 12,
+    marginBottom: 10
   },
   message: {
-    background: "#1e1e1e",
+    background: "#1e293b",
+    padding: 10,
     borderRadius: 10,
-    padding: 8,
-    marginBottom: 8,
+    marginBottom: 8
   },
   meta: {
     fontSize: 12,
-    opacity: 0.7,
-    marginBottom: 4,
+    opacity: 0.7
   },
   delete: {
-    marginTop: 6,
-    background: "none",
+    background: "#dc2626",
     border: "none",
-    color: "#ff4d4d",
+    color: "#fff",
+    padding: "4px 10px",
+    borderRadius: 6,
     cursor: "pointer",
     fontSize: 12,
+    marginTop: 6
   },
   inputRow: {
     display: "flex",
-    gap: 8,
+    gap: 8
   },
   input: {
     flex: 1,
-    padding: 8,
-    borderRadius: 8,
+    padding: 10,
+    borderRadius: 10,
     border: "none",
-    background: "#2a2a2a",
-    color: "#fff",
+    background: "#020617",
+    color: "#fff"
   },
   button: {
-    background: "#6c63ff",
+    background: "#6366f1",
     border: "none",
     color: "#fff",
-    padding: "8px 14px",
-    borderRadius: 8,
-    cursor: "pointer",
-  },
+    padding: "10px 16px",
+    borderRadius: 10,
+    cursor: "pointer"
+  }
 };

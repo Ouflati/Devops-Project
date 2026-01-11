@@ -1,20 +1,22 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import AuthApp from "./AuthApp";
 import TeamChat from "./TeamChat";
-import "./App.css";
 
 export default function App() {
-  const [logged, setLogged] = useState(
-    !!localStorage.getItem("token")
-  );
+  const [token, setToken] = useState(null);
 
-  return (
-    <div className="App">
-      {!logged ? (
-        <AuthApp onLoginSuccess={() => setLogged(true)} />
-      ) : (
-        <TeamChat />
-      )}
-    </div>
-  );
+  useEffect(() => {
+    const savedToken = localStorage.getItem("token");
+    if (savedToken) {
+      setToken(savedToken);
+    }
+  }, []);
+
+  // 🔐 PAS CONNECTÉ → LOGIN
+  if (!token) {
+    return <AuthApp onLoginSuccess={(t) => setToken(t)} />;
+  }
+
+  // 💬 CONNECTÉ → CHAT
+  return <TeamChat />;
 }

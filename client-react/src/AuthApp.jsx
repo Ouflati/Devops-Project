@@ -3,112 +3,172 @@ import { useState } from "react";
 const API = "/api/node/auth";
 
 export default function AuthApp({ onLoginSuccess }) {
-  const [mode, setMode] = useState("login"); // login | register
+  const [mode, setMode] = useState("login");
   const [form, setForm] = useState({
     username: "",
     email: "",
-    password: "",
-    oldPassword: "",
-    newPassword: ""
+    password: ""
   });
-  const [token, setToken] = useState("");
-  const [me, setMe] = useState(null);
   const [message, setMessage] = useState("");
 
-  const handleChange = e => {
+  const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const callApi = async (url, method, body, auth = false) => {
+  const callApi = async (url, method, body) => {
     const res = await fetch(`${API}${url}`, {
       method,
-      headers: {
-        "Content-Type": "application/json",
-        ...(auth && { Authorization: `Bearer ${token}` })
-      },
-      body: body ? JSON.stringify(body) : undefined
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body)
     });
+
+    if (!res.ok) throw new Error("Erreur API");
     return res.json();
   };
 
-  const handleRegister = async () => {
-    const res = await callApi("/register", "POST", {
-      username: form.username,
-      email: form.email,
-      password: form.password
-    });
-    setMessage(JSON.stringify(res));
-  };
-
   const handleLogin = async () => {
-  const res = await callApi("/login", "POST", {
-    identifier: form.email,
-    password: form.password
-  });
+    try {
+      const res = await callApi("/login", "POST", {
+        identifier: form.email,
+        password: form.password
+      });
 
-  if (res.token) {
-  localStorage.setItem("token", res.token);
-  setToken(res.token);
-  onLoginSuccess(); // 🔥 IMPORTANT
-}
-};
-
-
-  const handleMe = async () => {
-    const res = await callApi("/me", "GET", null, true);
-    setMe(res);
+      localStorage.setItem("token", res.token);
+      onLoginSuccess(res.token);
+    } catch {
+      setMessage("❌ Login incorrect");
+    }
   };
 
-  const handleChangePassword = async () => {
-    const res = await callApi("/change-password", "PUT", {
-      oldPassword: form.oldPassword,
-      newPassword: form.newPassword
-    }, true);
-    setMessage(JSON.stringify(res));
+  const handleRegister = async () => {
+    try {
+      await callApi("/register", "POST", {
+        username: form.username,
+        email: form.email,
+        password: form.password
+      });
+
+      setMessage("✅ Compte créé. Connectez-vous.");
+      setMode("login");
+    } catch {
+      setMessage("❌ Erreur inscription");
+    }
   };
 
   return (
-    <div style={{ border: "1px solid #aaa", padding: 20, marginTop: 30 }}>
-      <h2>🔐 Authentification</h2>
+    <div style={styles.page}>
+      <div style={styles.box}>
+        <h2 style={styles.title}>🔐 Authentification</h2>
 
-      <div>
-        <button onClick={() => setMode("login")}>Login</button>
-        <button onClick={() => setMode("register")}>Register</button>
+        <div style={styles.tabs}>
+          <span
+            style={mode === "login" ? styles.activeTab : styles.tab}
+            onClick={() => setMode("login")}
+          >
+            Login
+          </span>
+          <span
+            style={mode === "register" ? styles.activeTab : styles.tab}
+            onClick={() => setMode("register")}
+          >
+            Register
+          </span>
+        </div>
+
+        <h3 style={{ marginBottom: 12 }}>
+          {mode === "login" ? "Login" : "Register"}
+        </h3>
+
+        {mode === "register" && (
+          <input
+            style={styles.input}
+            name="username"
+            placeholder="Username"
+            onChange={handleChange}
+          />
+        )}
+
+        <div style={styles.row}>
+          <input
+            style={styles.input}
+            name="email"
+            placeholder="Email"
+            onChange={handleChange}
+          />
+          <input
+            style={styles.input}
+            type="password"
+            name="password"
+            placeholder="Password"
+            onChange={handleChange}
+          />
+          <button
+            style={styles.button}
+            onClick={mode === "login" ? handleLogin : handleRegister}
+          >
+            {mode === "login" ? "Login" : "Register"}
+          </button>
+        </div>
+
+        <p style={styles.message}>{message}</p>
       </div>
-
-      {mode === "register" && (
-        <>
-          <h3>Register</h3>
-          <input name="username" placeholder="Username" onChange={handleChange} />
-          <input name="email" placeholder="Email" onChange={handleChange} />
-          <input name="password" type="password" placeholder="Password" onChange={handleChange} />
-          <button onClick={handleRegister}>Register</button>
-        </>
-      )}
-
-      {mode === "login" && (
-        <>
-          <h3>Login</h3>
-          <input name="email" placeholder="Email" onChange={handleChange} />
-          <input name="password" type="password" placeholder="Password" onChange={handleChange} />
-          <button onClick={handleLogin}>Login</button>
-        </>
-      )}
-
-      {token && (
-        <>
-          <h3>Utilisateur connecté</h3>
-          <button onClick={handleMe}>Qui suis-je ?</button>
-          <pre>{JSON.stringify(me, null, 2)}</pre>
-
-          <h3>Changer votre mot de passe</h3>
-          <input name="oldPassword" type="password" placeholder="Ancien mot de passe" onChange={handleChange} />
-          <input name="newPassword" type="password" placeholder="Nouveau mot de passe" onChange={handleChange} />
-          <button onClick={handleChangePassword}>Changer</button>
-        </>
-      )}
-
-      <p>{message}</p>
     </div>
   );
 }
+
+const styles = {
+  page: {
+    minHeight: "100vh",
+    background: "#111",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center"
+  },
+  box: {
+    border: "1px solid #666",
+    padding: 24,
+    width: 500,
+    color: "#fff"
+  },
+  title: {
+    textAlign: "center",
+    marginBottom: 10
+  },
+  tabs: {
+    display: "flex",
+    justifyContent: "center",
+    gap: 20,
+    marginBottom: 20
+  },
+  tab: {
+    cursor: "pointer",
+    opacity: 0.6
+  },
+  activeTab: {
+    cursor: "pointer",
+    fontWeight: "bold"
+  },
+  row: {
+    display: "flex",
+    gap: 10,
+    alignItems: "center"
+  },
+  input: {
+    padding: 6,
+    flex: 1,
+    background: "#222",
+    border: "1px solid #666",
+    color: "#fff"
+  },
+  button: {
+    padding: "6px 16px",
+    background: "#333",
+    color: "#fff",
+    border: "1px solid #666",
+    cursor: "pointer"
+  },
+  message: {
+    marginTop: 10,
+    fontSize: 13
+  }
+};
