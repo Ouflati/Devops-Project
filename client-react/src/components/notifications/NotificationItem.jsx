@@ -1,8 +1,18 @@
 import React from "react";
 
-const NotificationItem = ({ icon, title, message, time, isRead }) => {
+const NotificationItem = ({ id, icon, title, message, time, isRead, onMarkRead }) => {
+  const handleClick = () => {
+    if (!isRead && typeof onMarkRead === 'function') onMarkRead(id);
+  };
+
   return (
-    <div className={`notification-item ${isRead ? "read" : "unread"}`}>
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={handleClick}
+      onKeyDown={(e) => { if (e.key === 'Enter') handleClick(); }}
+      className={`notification-item ${isRead ? "read" : "unread"}`}
+    >
       <div className="notification-icon">{icon}</div>
 
       <div className="notification-content">

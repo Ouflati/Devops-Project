@@ -1,60 +1,118 @@
-import React, { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import React, { useEffect, useMemo, useState } from "react";
 import NotificationItem from "./NotificationItem";
 import "./notifications.css";
-import { fetchNotifications, fetchUnreadCount, markAllNotificationsRead, deleteNotification, markNotificationRead } from "../../api";
+import { getNotifications, markAllNotificationsRead, markNotificationRead, deleteNotification } from "../../api";
+import AuthApp from "../../AuthApp";
+import { formatDistanceToNow } from "date-fns"; // You might need to install this or use native Intl
 
-const NotificationFeed = ({ token }) => {
-  const queryClient = useQueryClient();
+// Simple icon mapping
+const getIconForType = (type) => {
+  switch (type) {
+    case 'info': return 'ℹ️';
+    case 'warning': return '⚠️';
+    case 'success': return '✅';
+    case 'error': return '❌';
+    default: return 'bell';
+  }
+};
+
+const NotificationFeed = () => {
+  const [notifications, setNotifications] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [token, setToken] = useState(() => {
+    try { return typeof window !== 'undefined' ? window.localStorage.getItem('token') : null; } catch (e) { return null; }
+  });
+
   const [activeFilter, setActiveFilter] = useState("all");
 
-  const isReadParam = activeFilter === "unread" ? 0 : undefined;
+  const allCount = notifications.length;
 
-  const { data: listData, isLoading: listLoading } = useQuery({
-    queryKey: ["notifications", { is_read: isReadParam }],
-    queryFn: () => fetchNotifications(token, { limit: 10, offset: 0, is_read: isReadParam, meta: true }),
-    enabled: !!token,
-  });
+  const unreadCount = useMemo(
+    () => notifications.filter((n) => !n.is_read).length,
+    [notifications]
+  );
 
-  const notifications = listData?.items || [];
-  const allCount = listData?.meta?.total ?? notifications.length;
+  const filteredNotifications = useMemo(() => {
+    if (activeFilter === "unread") {
+      return notifications.filter((n) => !n.is_read);
+    }
+    return notifications;
+  }, [notifications, activeFilter]);
 
-  const { data: unreadData } = useQuery({
-    queryKey: ["notifications", "unread-count"],
-    queryFn: () => fetchUnreadCount(token),
-    enabled: !!token,
-  });
-
-  const unreadCount = unreadData?.unreadCount ?? 0;
-
-  const markAllMutation = useMutation({
-    mutationFn: () => markAllNotificationsRead(token),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["notifications"] });
-      queryClient.invalidateQueries({ queryKey: ["notifications", "unread-count"] });
-    },
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: (id) => deleteNotification(token, id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["notifications"] });
-      queryClient.invalidateQueries({ queryKey: ["notifications", "unread-count"] });
-    },
-  });
-
-  const markReadMutation = useMutation({
-    mutationFn: (id) => markNotificationRead(token, id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["notifications"] });
-      queryClient.invalidateQueries({ queryKey: ["notifications", "unread-count"] });
-    },
-  });
-
-  const handleMarkAllAsRead = () => markAllMutation.mutate();
-  const handleClearAll = () => {
-    notifications.forEach(n => deleteMutation.mutate(n.id));
+  const handleMarkAllAsRead = () => {
+    // optimistic update + backend
+    (async () => {
+      try {
+        await markAllNotificationsRead(token);
+        setNotifications((prev) => prev.map((n) => ({ ...n, is_read: 1 })));
+      } catch (err) {
+        console.error(err);
+        setError('Unable to mark all as read');
+      }
+    })();
   };
+
+  const handleClearAll = () => {
+    // delete each notification on backend then clear local state
+    (async () => {
+      try {
+        await Promise.all(notifications.map((n) => deleteNotification(token, n.id)));
+        setNotifications([]);
+      } catch (err) {
+        console.error(err);
+        setError('Unable to clear notifications');
+      }
+    })();
+  };
+
+  // mark single notification as read
+  const handleMarkAsRead = (id) => {
+    (async () => {
+      try {
+        await markNotificationRead(token, id);
+        setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, is_read: 1 } : n)));
+      } catch (err) {
+        console.error(err);
+        setError('Unable to mark notification as read');
+      }
+    })();
+  };
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      // require authentication token
+      if (!token) {
+        setNotifications([]);
+        setLoading(false);
+        setError('Token manquant — veuillez vous connecter.');
+        return;
+      }
+
+      setLoading(true);
+      setError(null);
+      try {
+        const data = await getNotifications(token);
+        if (!cancelled) setNotifications(data || []);
+      } catch (err) {
+        console.error(err);
+        if (!cancelled) setError(err.message || 'Failed to load notifications');
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [token]);
+
+  // listen for login events (other tabs or AuthApp storing token)
+  useEffect(() => {
+    const handler = (e) => {
+      if (e.key === 'token') setToken(e.newValue);
+    };
+    window.addEventListener('storage', handler);
+    return () => window.removeEventListener('storage', handler);
+  }, []);
 
   return (
     <div className="notification-page">
@@ -90,43 +148,48 @@ const NotificationFeed = ({ token }) => {
 
             <button
               onClick={handleMarkAllAsRead}
-              disabled={!notifications.length || unreadCount === 0 || markAllMutation.isLoading}
+              disabled={notifications.length === 0 || unreadCount === 0}
               className="btn"
             >
-              {markAllMutation.isLoading ? "Marking..." : "Mark all as read"}
+              Mark all as read
             </button>
 
             <button
               onClick={handleClearAll}
-              disabled={!notifications.length || deleteMutation.isLoading}
+              disabled={notifications.length === 0}
               className={`btn ${notifications.length === 0 ? "" : "btn-danger"}`}
             >
-              {deleteMutation.isLoading ? "Deleting..." : "Delete all"}
+              Clear all
             </button>
           </div>
         </div>
+
         <div className="notification-list">
-          {listLoading && <div className="empty-state">Loading notifications...</div>}
-          {!listLoading && notifications.length === 0 && (
-            <div className="empty-state">No notifications to show.</div>
-          )}
-          {!listLoading && notifications.map((n) => (
-            <div key={n.id}>
-              <NotificationItem
-                icon={"🔔"}
-                title={n.type}
-                message={n.message}
-                time={new Date(n.created_at).toLocaleString()}
-                isRead={!!n.is_read}
-              />
-              <div className="notification-actions">
-                {!n.is_read && (
-                  <button className="btn" onClick={() => markReadMutation.mutate(n.id)}>Mark read</button>
-                )}
-                <button className="btn btn-danger" onClick={() => deleteMutation.mutate(n.id)}>Delete</button>
-              </div>
+          {!token ? (
+            <div className="empty-state">
+              <div style={{ marginBottom: 12 }}>Token manquant — veuillez vous connecter pour voir vos notifications.</div>
+              <AuthApp />
             </div>
-          ))}
+          ) : loading ? (
+            <div className="empty-state">Loading notifications...</div>
+          ) : error ? (
+            <div className="empty-state">{error}</div>
+          ) : filteredNotifications.length === 0 ? (
+            <div className="empty-state">No notifications to show.</div>
+          ) : (
+            filteredNotifications.map((n) => (
+              <NotificationItem
+                key={n.id}
+                id={n.id}
+                icon={getIconForType(n.type)}
+                title={n.type.toUpperCase()} // or n.title if backend adds it
+                message={n.message}
+                time={n.created_at ? new Date(n.created_at).toLocaleString() : 'Just now'}
+                isRead={!!n.is_read} // Backend uses is_read (0/1)
+                onMarkRead={() => handleMarkAsRead(n.id)}
+              />
+            ))
+          )}
         </div>
       </div>
     </div>

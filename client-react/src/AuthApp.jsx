@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 const API = "/api/node/auth";
 
-export default function AuthApp({ onToken }) {
+export default function AuthApp() {
   const [mode, setMode] = useState("login"); // login | register
   const [form, setForm] = useState({
     username: "",
@@ -47,7 +47,13 @@ export default function AuthApp({ onToken }) {
     });
     if (res.token) {
       setToken(res.token);
-      if (onToken) onToken(res.token);
+      try {
+        if (typeof window !== 'undefined' && window.localStorage) {
+          window.localStorage.setItem('token', res.token);
+        }
+      } catch (e) {
+        // ignore
+      }
       setMessage("Login réussi");
     } else {
       setMessage(JSON.stringify(res));
@@ -67,6 +73,35 @@ export default function AuthApp({ onToken }) {
     }, true);
     setMessage(JSON.stringify(res));
   };
+
+  // DEV: auto-register/login test user to simplify local testing
+  useEffect(() => {
+    const auto = async () => {
+      try {
+        if (process.env.NODE_ENV === 'production') return;
+        if (typeof window === 'undefined') return;
+        const existing = window.localStorage.getItem('token');
+        if (existing) {
+          setToken(existing);
+          return;
+        }
+
+        const test = { username: 'devtest', email: 'devtest@example.com', password: 'devtest' };
+        // try to register (may fail if user exists) then login
+        try { await callApi('/register', 'POST', test); } catch (e) { /* ignore */ }
+        const res = await callApi('/login', 'POST', { identifier: test.email, password: test.password });
+        if (res && res.token) {
+          setToken(res.token);
+          try { window.localStorage.setItem('token', res.token); } catch (e) {}
+          setMessage('Auto login successful (dev)');
+        }
+      } catch (err) {
+        // swallow dev auto-login errors
+        console.debug('auto-login failed', err);
+      }
+    };
+    auto();
+  }, []);
 
   return (
     <div style={{ border: "1px solid #aaa", padding: 20, marginTop: 30 }}>

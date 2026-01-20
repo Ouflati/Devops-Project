@@ -1,10 +1,7 @@
-// Proxy base (see vite.config.js): '/api/node' → http://localhost:3000
-const API_BASE = '/api/node';
-const AUTH_URL = `${API_BASE}/auth`;
-const NOTIF_URL = `${API_BASE}/api/notifications`;
+const API_URL = 'http://localhost:3000/auth';
 
 export async function register(data) {
-  return fetch(`${AUTH_URL}/register`, {
+  return fetch(`${API_URL}/register`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data)
@@ -12,7 +9,7 @@ export async function register(data) {
 }
 
 export async function login(data) {
-  return fetch(`${AUTH_URL}/login`, {
+  return fetch(`${API_URL}/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data)
@@ -20,7 +17,7 @@ export async function login(data) {
 }
 
 export async function me(token) {
-  return fetch(`${AUTH_URL}/me`, {
+  return fetch(`${API_URL}/me`, {
     headers: {
       'Authorization': `Bearer ${token}`
     }
@@ -28,7 +25,7 @@ export async function me(token) {
 }
 
 export async function changePassword(token, data) {
-  return fetch(`${AUTH_URL}/change-password`, {
+  return fetch(`${API_URL}/change-password`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
@@ -38,44 +35,94 @@ export async function changePassword(token, data) {
   }).then(res => res.json());
 }
 
-// --- Notifications API ---
-export async function fetchNotifications(token, { limit = 10, offset = 0, is_read, type, sort = 'desc', meta = true } = {}) {
-  const params = new URLSearchParams();
-  params.set('limit', String(limit));
-  params.set('offset', String(offset));
-  params.set('sort', sort);
-  if (meta) params.set('meta', 'true');
-  if (is_read !== undefined) params.set('is_read', String(is_read));
-  if (type) params.set('type', type);
+/* Notifications API helpers */
+// NOTE: backend mounts notification routes at /api/notifications.
+// Vite proxy rewrites requests starting with /api/node to the backend root,
+// so request path should be '/api/node/api/notifications' -> backend '/api/notifications'.
+const NOTIF_BASE = '/api/node/api/notifications';
 
-  return fetch(`${NOTIF_URL}?${params.toString()}`, {
-    headers: { 'Authorization': `Bearer ${token}` }
-  }).then(res => res.json());
+function _getToken(candidate) {
+  if (candidate) return candidate;
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      return window.localStorage.getItem('token');
+    }
+  } catch (e) {
+    // ignore
+  }
+  return null;
 }
 
-export async function fetchUnreadCount(token) {
-  return fetch(`${NOTIF_URL}/unread-count`, {
-    headers: { 'Authorization': `Bearer ${token}` }
-  }).then(res => res.json());
+function _authHeaders(token) {
+  const t = _getToken(token);
+  return t ? { Authorization: `Bearer ${t}` } : {};
 }
 
-export async function markNotificationRead(token, id) {
-  return fetch(`${NOTIF_URL}/${id}/read`, {
-    method: 'PATCH',
-    headers: { 'Authorization': `Bearer ${token}` }
-  }).then(res => res.json());
+export async function getNotifications(token, { limit = 50, offset = 0 } = {}) {
+  const headers = _authHeaders(token);
+  const res = await fetch(`${NOTIF_BASE}?limit=${limit}&offset=${offset}`, { headers });
+  if (!res.ok) {
+    let body = null;
+    try { body = await res.json(); } catch (e) { /* ignore */ }
+    const msg = (body && body.message) || res.statusText || `Status ${res.status}`;
+    throw new Error(msg);
+  }
+  return res.json();
+}
+
+export async function getUnreadCount(token) {
+  const headers = _authHeaders(token);
+  const res = await fetch(`${NOTIF_BASE}/unread-count`, { headers });
+  if (!res.ok) {
+    let body = null;
+    try { body = await res.json(); } catch (e) {}
+    const msg = (body && body.message) || res.statusText || `Status ${res.status}`;
+    throw new Error(msg);
+  }
+  return res.json();
 }
 
 export async function markAllNotificationsRead(token) {
-  return fetch(`${NOTIF_URL}/read-all`, {
+  const headers = _authHeaders(token);
+  const res = await fetch(`${NOTIF_BASE}/read-all`, {
     method: 'PATCH',
-    headers: { 'Authorization': `Bearer ${token}` }
-  }).then(res => res.json());
+    headers,
+  });
+  if (!res.ok) {
+    let body = null;
+    try { body = await res.json(); } catch (e) {}
+    const msg = (body && body.message) || res.statusText || `Status ${res.status}`;
+    throw new Error(msg);
+  }
+  return res.json();
+}
+
+export async function markNotificationRead(token, id) {
+  const headers = _authHeaders(token);
+  const res = await fetch(`${NOTIF_BASE}/${id}/read`, {
+    method: 'PATCH',
+    headers,
+  });
+  if (!res.ok) {
+    let body = null;
+    try { body = await res.json(); } catch (e) {}
+    const msg = (body && body.message) || res.statusText || `Status ${res.status}`;
+    throw new Error(msg);
+  }
+  return res.json();
 }
 
 export async function deleteNotification(token, id) {
-  return fetch(`${NOTIF_URL}/${id}`, {
+  const headers = _authHeaders(token);
+  const res = await fetch(`${NOTIF_BASE}/${id}`, {
     method: 'DELETE',
-    headers: { 'Authorization': `Bearer ${token}` }
-  }).then(res => res.json());
+    headers,
+  });
+  if (!res.ok) {
+    let body = null;
+    try { body = await res.json(); } catch (e) {}
+    const msg = (body && body.message) || res.statusText || `Status ${res.status}`;
+    throw new Error(msg);
+  }
+  return res.json();
 }
