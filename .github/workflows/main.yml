@@ -6,4 +6,4 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Dire coucou
-        run: echo "Hello ! Je suis le robot GitHub et je vois que tu as pushé du code !"
+        run: echo "Hello ! Nous somme team 1"
