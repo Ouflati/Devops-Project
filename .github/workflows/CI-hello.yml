@@ -8,6 +8,9 @@ on:
     branches:
       - feature/calendar
 
+  # Lancement manuel
+  workflow_dispatch:
+
 jobs:
   hello-ci:
     runs-on: ubuntu-latest
@@ -18,6 +21,6 @@ jobs:
 
       - name: Say Hello
         run: |
-          echo "Hello from CI 👋"
-          echo "Branch: calendar"
+          echo "Hello World👋"
+          echo "Branch: feature/calendar"
           echo "Workflow CI is running successfully"
