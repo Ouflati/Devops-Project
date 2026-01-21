@@ -1,7 +1,10 @@
 name : Hello world
 
 on : 
-  push
+  push : 
+    branches :
+      - "team3_chat"
+  workflow_dispatch:
 jobs:
   say-hello-inline-bash:
     runs-on: ubuntu-24.04
