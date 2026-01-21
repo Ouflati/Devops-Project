@@ -8,18 +8,18 @@ jobs:
   build-all:
     runs-on: ubuntu-latest
     steps:
-      # 1. Jib l-code
+      
       - name: Checkout Code
         uses: actions/checkout@v3
 
-      # 2. Build Golang API
+      #  Building Golang API
       - name: Build Golang
         run: docker build -t go-api ./api-golang
 
-      # 3. Build Node API
+      #  Building Node API
       - name: Build Node
         run: docker build -t node-api ./api-node
 
-      # 4. Build React Client
+      #  Building React Client
       - name: Build React
         run: docker build -t react-client ./client-react
