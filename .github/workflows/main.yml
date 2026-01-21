@@ -1,66 +1,71 @@
-# Nom du workflow (visible dans GitHub Actions)
-name: CI/CD Pipeline
+name: CI DevOps Project
 
-# Déclenchement du workflow
+# Déclencheur : À chaque push sur la branche feature/auth
 on:
   push:
     branches:
-      - develop
-      - feature/auth
-  pull_request:
-    branches:
-      - develop
+      - 'feature/auth'
 
 jobs:
-  # ===== JOB BACKEND (API Node.js) =====
-  backend:
-    name: Backend - API Node.js
+  # JOB 1 : Vérifier le Backend (api-node)
+  test-backend:
+    name: 🧪 Test Backend (Node.js)
     runs-on: ubuntu-latest
-
+    
     steps:
-      # 1️⃣ Récupérer le code depuis le dépôt GitHub
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      # 1. Récupérer le code
+      - name: Checkout du code
+        uses: actions/checkout@v3
 
-      # 2️⃣ Installer Node.js
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      # 2. Installer Node.js
+      - name: Installation de Node.js
+        uses: actions/setup-node@v3
         with:
-          node-version: 18
+          node-version: '18'
 
-      # 3️⃣ Installer les dépendances de l’API Node
-      - name: Install dependencies (API Node)
-        working-directory: api-node
-        run: npm install
+      # 3. Installer les dépendances du Backend
+      - name: Install Backend Dependencies
+        run: |
+          cd api-node
+          npm install
 
-      # 4️⃣ Lancer les tests (si existants)
-      - name: Run tests (API Node)
-        working-directory: api-node
-        run: npm test
-        continue-on-error: true
+      # 4. Préparer la Base de Données (Important !)
+      - name: Initialisation BDD (Migrate)
+        run: |
+          cd api-node
+          node src/database/migrate.js
 
-  # ===== JOB FRONTEND (React) =====
-  frontend:
-    name: Frontend - React
+      # 5. Lancer les tests (AVEC LE SECRET CORRIGÉ)
+      - name: Exécution des Tests (Jest)
+        env:
+          JWT_SECRET: "secret_temporaire_pour_test_github" # <-- C'est ça qui répare l'erreur 500 !
+        run: |
+          cd api-node
+          npm test
+
+  # JOB 2 : Vérifier le Frontend (client-react)
+  build-frontend:
+    name: 🏗️ Build Frontend (React)
     runs-on: ubuntu-latest
-
+    needs: test-backend # Attend que le backend soit OK
+    
     steps:
-      # 1️⃣ Récupérer le code
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - name: Checkout du code
+        uses: actions/checkout@v3
 
-      # 2️⃣ Installer Node.js
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - name: Installation de Node.js
+        uses: actions/setup-node@v3
         with:
-          node-version: 18
+          node-version: '18'
 
-      # 3️⃣ Installer les dépendances React
-      - name: Install dependencies (React)
-        working-directory: client-react
-        run: npm install
+      # 1. Installer les dépendances du Frontend
+      - name: Install Frontend Dependencies
+        run: |
+          cd client-react
+          npm install
 
-      # 4️⃣ Build de l’application React
-      - name: Build React app
-        working-directory: client-react
-        run: npm run build
+      # 2. Vérifier que le code compile (Build)
+      - name: Build React App
+        run: |
+          cd client-react
+          npm run build
