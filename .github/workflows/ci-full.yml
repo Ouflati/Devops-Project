@@ -27,7 +27,7 @@ jobs:
           cache-dependency-path: api-node/package-lock.json
       
       - name: Install dependencies
-        run: npm install
+        run: npm ci
       
       - name: Run tests with coverage
         env:
@@ -61,7 +61,7 @@ jobs:
           cache-dependency-path: api-node/package-lock.json
       
       - name: Install dependencies
-        run: npm install
+        run: npm ci
       
       - name: Run ESLint
         run: npm run lint 2>/dev/null || echo " No lint script configured"
@@ -85,7 +85,7 @@ jobs:
           cache-dependency-path: client-react/package-lock.json
       
       - name: Install dependencies
-        run: npm install
+        run: npm ci
       
       - name: Build React app
         run: npm run build
@@ -115,8 +115,14 @@ jobs:
           cache: true
           cache-dependency-path: api-golang/go.sum
       
+      - name: Tidy Go modules
+        run: go mod tidy
+      
       - name: Download Go dependencies
         run: go mod download
+      
+      - name: Enable CGO for SQLite
+        run: echo "CGO_ENABLED=1" >> $GITHUB_ENV
       
       - name: Build Go binary
         run: go build -v -o api-golang ./...
