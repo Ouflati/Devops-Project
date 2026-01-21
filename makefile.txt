@@ -1,0 +1,35 @@
+### ---------- API NODE ----------
+
+install-api-node:
+	cd api-node && npm install
+
+run-api-node:
+	cd api-node && npx nodemon index.js
+
+
+### ---------- API GOLANG ----------
+
+install-api-golang:
+	cd api-golang && go mod download
+
+run-api-golang:
+	cd api-golang && go run main.go
+
+
+### ---------- CLIENT REACT ----------
+
+install-client-react:
+	cd client-react && npm install
+
+run-client-react:
+	cd client-react && npm run dev
+
+
+### ---------- COMMANDES GLOBALES ----------
+
+install-all: install-api-node install-api-golang install-client-react
+
+run-all:
+	make run-api-node &
+	make run-api-golang &
+	make run-client-react
