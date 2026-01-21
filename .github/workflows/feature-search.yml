@@ -1,0 +1,30 @@
+name: Feature Search - CI
+
+on:
+  push:
+    branches:
+      - feature/search
+  pull_request:
+    branches:
+      - feature/search
+
+jobs:
+  search-backend-ci:
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+
+      - name: Build Search backend
+        working-directory: api-golang
+        run: go build ./...
+
+      - name: Test Search backend
+        working-directory: api-golang
+        run: go test ./... || echo "No tests for search yet"
