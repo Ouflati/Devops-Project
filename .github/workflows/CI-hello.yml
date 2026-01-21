@@ -1,7 +1,7 @@
 name: CI Hello Calendar
 
 on:
-  workflow_dispatch:
+  workflow_dispatch: 
   #push:
    # branches:
    #   - feature/calendar
