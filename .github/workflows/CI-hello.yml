@@ -2,7 +2,6 @@ name: CI Hello Calendar
 
 
 on:
-  # Lancement manuel
   workflow_dispatch:
   push:
     branches:
