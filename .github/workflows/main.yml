@@ -1,9 +1,66 @@
-name: Mon Premier Workflow
-on: [push]
+# Nom du workflow (visible dans GitHub Actions)
+name: CI/CD Pipeline
+
+# Déclenchement du workflow
+on:
+  push:
+    branches:
+      - develop
+      - feature/auth
+  pull_request:
+    branches:
+      - develop
 
 jobs:
-  dire-bonjour:
+  # ===== JOB BACKEND (API Node.js) =====
+  backend:
+    name: Backend - API Node.js
     runs-on: ubuntu-latest
+
     steps:
-      - name: Dire coucou
-        run: echo "Hello ! Nous somme team 1"
+      # 1️⃣ Récupérer le code depuis le dépôt GitHub
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2️⃣ Installer Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      # 3️⃣ Installer les dépendances de l’API Node
+      - name: Install dependencies (API Node)
+        working-directory: api-node
+        run: npm install
+
+      # 4️⃣ Lancer les tests (si existants)
+      - name: Run tests (API Node)
+        working-directory: api-node
+        run: npm test
+        continue-on-error: true
+
+  # ===== JOB FRONTEND (React) =====
+  frontend:
+    name: Frontend - React
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1️⃣ Récupérer le code
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2️⃣ Installer Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      # 3️⃣ Installer les dépendances React
+      - name: Install dependencies (React)
+        working-directory: client-react
+        run: npm install
+
+      # 4️⃣ Build de l’application React
+      - name: Build React app
+        working-directory: client-react
+        run: npm run build
