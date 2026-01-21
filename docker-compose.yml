@@ -1,0 +1,21 @@
+version: "3.9"
+
+services:
+  api-node:
+    build:
+      context: ./api-node
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - JWT_SECRET=${JWT_SECRET:-change_me}
+      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-1h}
+    ports:
+      - "3000:3000"
+
+  client-react:
+    build:
+      context: ./client-react
+    ports:
+      - "8080:80"
+    depends_on:
+      - api-node
