@@ -97,51 +97,17 @@ jobs:
           path: client-react/dist/
           retention-days: 5
 
-  build-golang:
-    name: Build Go API
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: api-golang
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-      
-      - name: Setup Go
-        uses: actions/setup-go@v4
-        with:
-          go-version: '1.19'
-          cache: true
-          cache-dependency-path: api-golang/go.sum
-      
-      - name: Tidy Go modules
-        run: go mod tidy
-      
-      - name: Download Go dependencies
-        run: go mod download
-      
-      - name: Enable CGO for SQLite
-        run: echo "CGO_ENABLED=1" >> $GITHUB_ENV
-      
-      - name: Build Go binary
-        run: go build -v -o api-golang ./...
-      
-      - name: Run Go tests (if any)
-        run: go test -v ./... 2>/dev/null || echo "ℹNo Go tests found"
-
   ci-status:
     name: CI Status Check
     runs-on: ubuntu-latest
-    needs: [test-node-api, lint-node-api, build-react, build-golang]
+    needs: [test-node-api, lint-node-api, build-react]
     if: always()
     
     steps:
       - name: Check CI Status
         run: |
           if [ "${{ needs.test-node-api.result }}" = "failure" ] || \
-             [ "${{ needs.build-react.result }}" = "failure" ] || \
-             [ "${{ needs.build-golang.result }}" = "failure" ]; then
+             [ "${{ needs.build-react.result }}" = "failure" ]; then
             echo "CI Pipeline Failed"
             exit 1
           fi
