@@ -1,26 +1,43 @@
-// api-node/src/db.js  (← give students THIS version)
-const path = require('path');
-const sqlite3 = require('sqlite3');
-const { open } = require('sqlite');
+const { Pool } = require('pg');
 
-const dbPath = path.join(__dirname, '..', '..', 'dev.db');
+const pool = new Pool({
+  user: process.env.DB_USER || 'user',
+  host: process.env.DB_HOST || 'localhost',
+  database: process.env.DB_NAME || 'db',
+  password: process.env.DB_PASSWORD || 'password',
+  port: process.env.DB_PORT || 5432,
+});
 
-async function openDb() {
-  return open({
-    filename: dbPath,
-    driver: sqlite3.Database,
-  });
-}
-
-// Only returns current time – same shape as original Postgres version
-const getDateTime = async () => {
-  const db = await openDb();
+const createTables = async () => {
   try {
-    const row = await db.get("SELECT datetime('now') AS now");
-    return { now: row.now };
-  } finally {
-    await db.close();
+    // Table Users
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        username VARCHAR(50) UNIQUE NOT NULL,
+        email VARCHAR(100) UNIQUE NOT NULL,
+        password VARCHAR(255) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    // Table Tasks (Ta Feature)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS tasks (
+        id SERIAL PRIMARY KEY,
+        title VARCHAR(100) NOT NULL,
+        description TEXT,
+        status VARCHAR(20) DEFAULT 'TODO' CHECK (status IN ('TODO', 'IN_PROGRESS', 'DONE')),
+        priority VARCHAR(10) DEFAULT 'MEDIUM' CHECK (priority IN ('LOW', 'MEDIUM', 'HIGH')),
+        due_date TIMESTAMP,
+        assigned_to INTEGER REFERENCES users(id) ON DELETE SET NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+    console.log('✅ Tables created successfully');
+  } catch (err) {
+    console.error('❌ Error creating tables', err);
   }
 };
 
-module.exports = { getDateTime };
+module.exports = { pool, createTables };

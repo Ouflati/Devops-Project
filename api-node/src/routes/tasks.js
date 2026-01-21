@@ -1,6 +1,10 @@
 const express = require('express');
 const router = express.Router();
+<<<<<<< HEAD
 const { pool } = require('../db');   
+=======
+const { pool } = require('../db');// On importe la connexion DB
+>>>>>>> af56eb2f93f769c4c3f635ec49998057a85e116f
 
 // 1. LISTER LES TÂCHES (GET)
 router.get('/', async (req, res) => {

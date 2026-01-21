@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DevOps Project - Kanban Board</title>
+    <style>
+        :root { --bg-color: #f4f5f7; --card-bg: #fff; --todo: #ebecf0; --doing: #e3fcef; --done: #e3f2fd; }
+        body { font-family: 'Segoe UI', sans-serif; background-color: var(--bg-color); margin: 0; padding: 20px; }
+        h1 { text-align: center; color: #172b4d; }
+        
+        /* Formulaire d'ajout */
+        .controls { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap; }
+        input, select, button { padding: 10px; border-radius: 4px; border: 1px solid #dfe1e6; }
+        button { background: #0052cc; color: white; border: none; cursor: pointer; font-weight: bold; }
+        button:hover { background: #0747a6; }
+
+        /* Le Plateau Kanban */
+        .board { display: flex; gap: 20px; justify-content: space-between; align-items: flex-start; height: 80vh; }
+        .column { flex: 1; background: var(--todo); border-radius: 8px; padding: 10px; min-height: 200px; display: flex; flex-direction: column; }
+        .column h2 { text-align: center; color: #5e6c84; font-size: 1rem; text-transform: uppercase; margin-top: 0; }
+        
+        /* Couleurs des colonnes */
+        #todo-col { background-color: #ebecf0; }
+        #progress-col { background-color: #e3fcef; }
+        #done-col { background-color: #e3f2fd; }
+
+        /* Les Cartes (Tâches) */
+        .card { background: white; padding: 10px; border-radius: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); margin-bottom: 10px; cursor: grab; transition: transform 0.2s; }
+        .card:hover { background-color: #fafbfc; }
+        .card h3 { margin: 0 0 5px 0; font-size: 1rem; color: #172b4d; }
+        .card p { margin: 0; font-size: 0.85rem; color: #5e6c84; }
+        .tags { display: flex; gap: 5px; margin-top: 8px; font-size: 0.75rem; }
+        .tag { padding: 2px 6px; border-radius: 4px; font-weight: bold; }
+        .tag.high { background: #ffebe6; color: #bf2600; }
+        .tag.medium { background: #fffae6; color: #ff991f; }
+        .tag.low { background: #e3fcef; color: #006644; }
+        .date-tag { background: #eae6ff; color: #403294; }
+
+    </style>
+</head>
+<body>
+
+    <h1> Tableau Kanban pour gérer les tâches </h1>
+
+    <div class="controls">
+        <input type="text" id="title" placeholder="Titre de la tâche" required style="flex: 2;">
+        <select id="priority">
+            <option value="LOW">Priorité Basse</option>
+            <option value="MEDIUM" selected>Priorité Moyenne</option>
+            <option value="HIGH">Priorité Haute</option>
+        </select>
+        <input type="date" id="dueDate">
+        <input type="number" id="assignedTo" placeholder="ID User (ex: 1)" style="width: 80px;">
+        <button onclick="createTask()">+ Ajouter</button>
+    </div>
+
+    <div class="board">
+        <div class="column" id="todo-col" ondrop="drop(event, 'TODO')" ondragover="allowDrop(event)">
+            <h2>To Do 📝</h2>
+            <div id="todo-list" style="height: 100%;"></div>
+        </div>
+
+        <div class="column" id="progress-col" ondrop="drop(event, 'IN_PROGRESS')" ondragover="allowDrop(event)">
+            <h2>In Progress 🔨</h2>
+            <div id="progress-list" style="height: 100%;"></div>
+        </div>
+
+        <div class="column" id="done-col" ondrop="drop(event, 'DONE')" ondragover="allowDrop(event)">
+            <h2>Done ✅</h2>
+            <div id="done-list" style="height: 100%;"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = '/api/tasks';
+
+        // 1. Charger et afficher les tâches
+        async function loadTasks() {
+            const res = await fetch(API_URL);
+            const tasks = await res.json();
+            
+            // Vider les colonnes
+            document.getElementById('todo-list').innerHTML = '';
+            document.getElementById('progress-list').innerHTML = '';
+            document.getElementById('done-list').innerHTML = '';
+
+            tasks.forEach(task => {
+                const card = createCardHTML(task);
+                // On met la carte dans la bonne colonne selon son statut
+                if (task.status === 'TODO') document.getElementById('todo-list').appendChild(card);
+                else if (task.status === 'IN_PROGRESS') document.getElementById('progress-list').appendChild(card);
+                else if (task.status === 'DONE') document.getElementById('done-list').appendChild(card);
+            });
+        }
+
+        // Créer le visuel d'une carte
+        function createCardHTML(task) {
+            const div = document.createElement('div');
+            div.className = 'card';
+            div.draggable = true; // IMPORTANT : Rend l'élément déplaçable
+            div.id = `task-${task.id}`;
+            div.ondragstart = (e) => e.dataTransfer.setData("text", task.id);
+            
+            // Formatage de la date
+            const dateStr = task.due_date ? new Date(task.due_date).toLocaleDateString() : 'Pas de date';
+
+            div.innerHTML = `
+                <h3>${task.title}</h3>
+                <p>Assigné à ID: ${task.assigned_to || '?'}</p>
+                <div class="tags">
+                    <span class="tag ${task.priority.toLowerCase()}">${task.priority}</span>
+                    <span class="tag date-tag">📅 ${dateStr}</span>
+                </div>
+            `;
+            return div;
+        }
+
+        // 2. Créer une nouvelle tâche
+        async function createTask() {
+            const title = document.getElementById('title').value;
+            const priority = document.getElementById('priority').value;
+            const dueDate = document.getElementById('dueDate').value;
+            const assignedTo = document.getElementById('assignedTo').value;
+
+            if (!title) return alert("Le titre est obligatoire !");
+
+            await fetch(API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    title, 
+                    description: 'Créé depuis le Kanban', 
+                    priority, 
+                    due_date: dueDate || null, 
+                    assigned_to: assignedTo || null
+                })
+            });
+
+            document.getElementById('title').value = '';
+            loadTasks();
+        }
+
+        // 3. Logique Drag & Drop (Le coeur du système)
+        function allowDrop(ev) {
+            ev.preventDefault(); // Autorise le "lâcher"
+        }
+
+        async function drop(ev, newStatus) {
+            ev.preventDefault();
+            const taskId = ev.dataTransfer.getData("text"); // Récupère l'ID de la tâche glissée
+            
+            // Appelle l'API pour mettre à jour le statut dans la Base de Données
+            await fetch(`${API_URL}/${taskId}/status`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: newStatus })
+            });
+
+            loadTasks(); // Recharge l'affichage
+        }
+
+        // Démarrage
+        loadTasks();
+    </script>
+</body>
+</html>
