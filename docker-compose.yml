@@ -1,0 +1,25 @@
+version: '3.8'
+
+services:
+  # 1. React Frontend (Runs on port 3000)
+  client:
+    build: ./client-react
+    container_name: react-client
+    ports:
+      - "3000:3000"
+    stdin_open: true 
+    tty: true
+
+  # 2. Node Backend (Runs on port 4000 to avoid conflict)
+  api-node:
+    build: ./api-node
+    container_name: node-api
+    ports:
+      - "4000:3000"
+
+  # 3. Golang Backend (Runs on port 8080)
+  api-golang:
+    build: ./api-golang
+    container_name: go-api
+    ports:
+      - "8080:8080"

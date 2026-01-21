@@ -1,0 +1,25 @@
+name: Docker Build CI
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  build-all:
+    runs-on: ubuntu-latest
+    steps:
+      
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      #  Building Golang API
+      - name: Build Golang
+        run: docker build -t go-api ./api-golang
+
+      #  Building Node API
+      - name: Build Node
+        run: docker build -t node-api ./api-node
+
+      #  Building React Client
+      - name: Build React
+        run: docker build -t react-client ./client-react
