@@ -14,6 +14,7 @@ func NewService(repo *Repository) *Service {
 
 func (s *Service) CreatePoll(req CreatePollRequest, userID int64) (int64, error) {
 <<<<<<< HEAD
+<<<<<<< HEAD
 	// 1. Validation de la question (Fix l-panic)
 	if req.Question == "" {
 		return 0, errors.New("la question ne peut pas être vide")
@@ -129,6 +130,55 @@ func (s *Service) Vote(poll Poll, req VoteRequest, userID int64) error {
         }
     }
 >>>>>>> b2c29e9ff7143e62ddf524c8e02ff9b91223f143
+=======
+	if len(req.Options) < 2 || len(req.Options) > 10 {
+		return 0, errors.New("le poll doit contenir entre 2 et 10 options")
+	}
+
+	pollID, err := s.Repo.CreatePoll(Poll{
+		Question:  req.Question,
+		Type:      req.Type,
+		CreatedBy: userID,
+		EndsAt:    req.EndsAt,
+	})
+	if err != nil {
+		return 0, err
+	}
+
+	for _, opt := range req.Options {
+		err := s.Repo.AddOption(pollID, opt)
+		if err != nil {
+			return 0, err
+		}
+	}
+
+	return pollID, nil
+}
+
+func (s *Service) Vote(poll Poll, req VoteRequest, userID int64) error {
+	if poll.IsClosed {
+		return errors.New("poll fermé")
+	}
+
+	voted, err := s.Repo.HasUserVoted(poll.ID, userID)
+	if err != nil {
+		return err
+	}
+	if voted {
+		return errors.New("utilisateur a déjà voté")
+	}
+
+	if poll.Type == "single" && len(req.OptionIDs) != 1 {
+		return errors.New("choix unique requis")
+	}
+
+	for _, optID := range req.OptionIDs {
+		err := s.Repo.Vote(poll.ID, optID, userID)
+		if err != nil {
+			return err
+		}
+	}
+>>>>>>> parent of 6266b5c (merge: synchronisation avec la branche distante)
 
 	return nil
 }
