@@ -1,4 +1,5 @@
-const API_URL = 'http://localhost:3000/auth';
+// const API_URL = 'http://localhost:3000/auth';
+const API_URL = '/api/node/auth';
 
 export async function register(data) {
   return fetch(`${API_URL}/register`, {

@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  # Service Backend Node.js
+  api-node:
+    build: ./api-node
+    container_name: api-node
+    ports:
+      - "3000:3000"
+    environment:
+      - JWT_SECRET=mon_super_secret_docker
+      - PORT=3000
+    volumes:
+      # Persistance de la base de données SQLite
+      - ./api-node/dev.db:/app/dev.db
+    # On surcharge la commande pour lancer la migration PUIS le serveur
+    command: sh -c "npm run migrate && npm start"
+
+  # Service Backend Go
+  api-golang:
+    build: ./api-golang
+    container_name: api-golang
+    ports:
+      - "8080:8080"
+    environment:
+      - PORT=8080
+      - DB_PATH=/app/dev.db  # <--- On dit au code Go où trouver la DB
+    volumes:
+      - ./api-node/dev.db:/app/dev.db # <--- On partage le MEME fichier que Node
+
+  # Service Frontend React
+  client-react:
+    build: ./client-react
+    container_name: client-react
+    ports:
+      - "80:80"
+    depends_on:
+      - api-node
+      - api-golang

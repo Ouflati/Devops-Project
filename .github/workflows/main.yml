@@ -1,71 +1,113 @@
-# Nom du workflow (visible dans GitHub Actions)
+# ==========================================================
+# Nom du Workflow : CI/CD Pipeline
+# Description : Ce pipeline teste le code Node.js, compile le React,
+# et vérifie que les conteneurs Docker se construisent correctement.
+# ==========================================================
 name: CI/CD Pipeline
 
-# Déclenchement du workflow
+# ----------------------------------------------------------
+# DÉCLENCHEURS (TRIGGERS)
+# ----------------------------------------------------------
 on:
+  # Se déclenche lors d'un push sur les branches 'develop' ou 'feature/auth'
   push:
     branches:
       - develop
       - feature/auth
+  # Se déclenche lors d'une Pull Request vers la branche 'develop'
   pull_request:
     branches:
       - develop
 
 jobs:
-  # ===== JOB BACKEND (API Node.js) =====
+  # ========================================================
+  # JOB 1 : BACKEND (Tests Unitaires & Intégration)
+  # ========================================================
   backend:
-    name: Backend - API Node.js
-    runs-on: ubuntu-latest
+    name: Backend - API Node.js (Tests)
+    runs-on: ubuntu-latest # Utilise une machine virtuelle Linux (Ubuntu)
 
     steps:
-      # 1️⃣ Récupérer le code depuis le dépôt  GitHub
+      # 1. Récupération du code source
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2️⃣ Installer Node.js
+      # 2. Installation de l'environnement Node.js (Version 18)
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 18
 
-      # 3️⃣ Installer les dépendances de l’API Node
+      # 3. Installation des librairies (node_modules)
+      # On se place dans le dossier 'api-node' pour exécuter la commande
       - name: Install dependencies (API Node)
         working-directory: api-node
         run: npm install
 
-      # 🆕 ÉTAPE CRUCIALE À AJOUTER ICI :
+      # 4. Création de la base de données (SQLite)
+      # Indispensable pour que les tests puissent interagir avec une vraie table 'users'
       - name: Run Database Migrations
         working-directory: api-node
         run: npm run migrate
 
-      # 4️⃣ Lancer les tests (si existants)
+      # 5. Exécution des tests unitaires (Jest)
+      # Vérifie que la logique d'authentification fonctionne
       - name: Run tests (API Node)
         working-directory: api-node
         run: npm test
-        continue-on-error: true
 
-  # ===== JOB FRONTEND (React) =====
+  # ========================================================
+  # JOB 2 : FRONTEND (Build de l'application React)
+  # ========================================================
   frontend:
-    name: Frontend - React
+    name: Frontend - React (Build)
     runs-on: ubuntu-latest
+    needs: backend # (Optionnel) Attend que le backend soit validé avant de lancer le front
 
     steps:
-      # 1️⃣ Récupérer le code
+      # 1. Récupération du code source
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2️⃣ Installer Node.js
+      # 2. Installation de Node.js
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 18
 
-      # 3️⃣ Installer les dépendances React
+      # 3. Installation des dépendances React
       - name: Install dependencies (React)
         working-directory: client-react
         run: npm install
 
-      # 4️⃣ Build de l’application React
+      # 4. Compilation du projet (Build)
+      # Vérifie qu'il n'y a pas d'erreurs de syntaxe et génère le dossier 'dist'
       - name: Build React app
         working-directory: client-react
         run: npm run build
+
+  # ========================================================
+  # JOB 3 : DOCKER (Vérification de la conteneurisation)
+  # ========================================================
+  docker:
+    name: Docker - Build & Verify
+    runs-on: ubuntu-latest
+    # Ce job ne démarre que si les tests Backend ET le build Frontend ont réussi
+    needs: [backend, frontend]
+
+    steps:
+      # 1. Récupération du code source
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. Configuration de Docker Buildx
+      # Outil moderne pour construire des images Docker plus efficacement
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # 3. Construction des images via Docker Compose
+      # Cette commande lit le fichier 'docker-compose.yml' et tente de construire
+      # les 3 images (api-node, api-golang, client-react).
+      # Si un Dockerfile contient une erreur, le pipeline s'arrêtera ici.
+      - name: Build Docker Images
+        run: docker-compose build
