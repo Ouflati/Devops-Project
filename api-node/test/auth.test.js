@@ -3,6 +3,14 @@ const app = require('../src/index');
 const { openDb } = require('../src/db');
 const { hashPassword } = require('../src/utils/password');
 
+import setupTestDB from './setupTestDB';
+
+let db;
+
+beforeAll(async () => {
+  db = await setupTestDB();
+});
+
 let token;
 
 // Avant tous les tests : créer un utilisateur test
