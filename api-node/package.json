@@ -8,7 +8,8 @@
     "dev": "nodemon src/index.js",
     "debug": "nodemon --inspect ./src/index.js",
     "debug-docker": "nodemon --inspect=0.0.0.0:9229 ./src/index.js",
-    "test": "jest --detectOpenHandles --forceExit"
+    "test": "jest --detectOpenHandles --forceExit",
+    "migrate": "node src/database/migrate.js"
   },
   "author": "",
   "license": "ISC",

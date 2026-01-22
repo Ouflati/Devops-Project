@@ -33,6 +33,11 @@ jobs:
         working-directory: api-node
         run: npm install
 
+      # 🆕 ÉTAPE CRUCIALE À AJOUTER ICI :
+      - name: Run Database Migrations
+        working-directory: api-node
+        run: npm run migrate
+
       # 4️⃣ Lancer les tests (si existants)
       - name: Run tests (API Node)
         working-directory: api-node
