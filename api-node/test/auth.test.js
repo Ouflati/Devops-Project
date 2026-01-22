@@ -3,7 +3,7 @@ const app = require('../src/index');
 const { openDb } = require('../src/db');
 const { hashPassword } = require('../src/utils/password');
 
-import setupTestDB from './setupTestDB';
+const setupTestDB = require('./setupTestDB');
 
 let db;
 

@@ -1,9 +1,9 @@
-import sqlite3 from 'sqlite3';
-import { open } from 'sqlite';
+const sqlite3 = require('sqlite3');
+const { open } = require('sqlite');
 
-export default async function setupTestDB() {
+module.exports = async function setupTestDB() {
   const db = await open({
-    filename: ':memory:', // base en mémoire pour les tests
+    filename: ':memory:',
     driver: sqlite3.Database
   });
 
@@ -16,4 +16,4 @@ export default async function setupTestDB() {
   `);
 
   return db;
-}
+};
