@@ -110,4 +110,4 @@ jobs:
       # les 3 images (api-node, api-golang, client-react).
       # Si un Dockerfile contient une erreur, le pipeline s'arrêtera ici.
       - name: Build Docker Images
-        run: docker-compose build
+        run: docker compose build
