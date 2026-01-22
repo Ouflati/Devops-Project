@@ -50,9 +50,11 @@ exports.login = async (req, res) => {
 
 exports.me = async (req, res) => {
   try {
+    console.log("Tentative de récupération user ID:", req.userId); // Log de l'ID
     const user = await findById(req.userId);
     res.json(user);
   } catch (err) {
+    console.error("ERREUR DANS ME:", err); // <--- AFFICHER L'ERREUR
     res.status(500).json({ message: 'Erreur serveur' });
   }
 };

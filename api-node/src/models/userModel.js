@@ -24,7 +24,7 @@ async function findByEmailOrUsername(identifier) {
 async function findById(id) {
   const db = await openDb();
   const user = await db.get(
-    `SELECT id, username, email, created_at FROM users WHERE id = ?`,
+    `SELECT id, username, email FROM users WHERE id = ?`,
     [id]
   );
   await db.close();

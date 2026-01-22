@@ -1,27 +1,24 @@
+const path = require('path');
 const sqlite3 = require('sqlite3');
 const { open } = require('sqlite');
 
-let db;
+const dbPath = path.join(__dirname, '..', '..', 'dev.db');
 
 async function openDb() {
-  if (!db) {
-    db = await open({
-      filename: process.env.NODE_ENV === 'test'
-        ? ':memory:'
-        : './database.sqlite',
-      driver: sqlite3.Database
-    });
-
-    await db.exec(`
-      CREATE TABLE IF NOT EXISTS users (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        username TEXT,
-        email TEXT UNIQUE NOT NULL,
-        password TEXT NOT NULL
-      )
-    `);
-  }
-  return db;
+  return open({
+    filename: dbPath,
+    driver: sqlite3.Database,
+  });
 }
 
-module.exports = { openDb };
+const getDateTime = async () => {
+  const db = await openDb();
+  try {
+    const row = await db.get("SELECT datetime('now') AS now");
+    return { now: row.now };
+  } finally {
+    await db.close();
+  }
+};
+
+module.exports = { openDb, getDateTime };
