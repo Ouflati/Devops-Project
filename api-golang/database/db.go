@@ -4,12 +4,11 @@ package database
 
 import (
 	"database/sql"
+	"github.com/gin-gonic/gin"
+	_ "github.com/mattn/go-sqlite3"
 	"os"
 	"path/filepath"
 	"runtime"
-
-	"github.com/gin-gonic/gin"
-	_ "github.com/mattn/go-sqlite3"
 )
 
 var db *sql.DB
