@@ -1,5 +1,10 @@
 # ========= BUILD =========
-FROM golang:1.22-alpine AS builder
+FROM golang:1.23-alpine AS builder
+
+RUN apk update && apk add --no-cache gcc musl-dev sqlite-dev
+
+ENV CGO_ENABLED=1
+
 
 WORKDIR /app
 

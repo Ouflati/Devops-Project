@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 
 	"api-golang/database"
@@ -19,16 +20,24 @@ func init() {
 
 func main() {
 
+	// 🔧 Gin router
 	r := gin.Default()
+
+	// ✅ CORS CONFIG (OBLIGATOIRE POUR REACT)
+	r.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"http://localhost:3000"},
+		AllowMethods:     []string{"GET", "POST", "OPTIONS"},
+		AllowHeaders:     []string{"Content-Type"},
+		AllowCredentials: true,
+	}))
 
 	// 🔍 Search service
 	searchService := searchservice.NewSearchService()
 	searchHandler := searchhttp.NewSearchHandler(searchService)
 
-	var tm string
-
+	// 🕒 Test route
 	r.GET("/", func(c *gin.Context) {
-		tm = database.GetTime(c)
+		tm := database.GetTime(c)
 		c.JSON(200, gin.H{
 			"api": "golang",
 			"now": tm,
@@ -36,7 +45,6 @@ func main() {
 	})
 
 	r.GET("/ping", func(c *gin.Context) {
-		tm = database.GetTime(c)
 		c.JSON(200, "pong")
 	})
 
@@ -45,5 +53,6 @@ func main() {
 		searchHandler.HandleSearch(c.Writer, c.Request)
 	})
 
-	r.Run()
+	// 🚀 Run server
+	r.Run(":8080")
 }
